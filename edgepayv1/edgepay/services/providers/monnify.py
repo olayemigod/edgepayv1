@@ -62,7 +62,43 @@ class MonnifyProvider(BaseProvider):
 		}
 
 	def verify_webhook_signature(self, payload, headers):
-		return True
+		signature = headers.get("monnify-signature") or headers.get("Monnify-Signature")
+		if not signature:
+			return False
+		secret_key = self.provider_doc.get_password("secret_key")
+		if not secret_key:
+			return False
+		import hmac
+		import hashlib
+		key = secret_key.encode('utf-8')
+		if isinstance(payload, str):
+			msg = payload.encode('utf-8')
+		else:
+			msg = payload
+		expected = hmac.new(key, msg, hashlib.sha512).hexdigest()
+		return hmac.compare_digest(expected, signature)
+
+	def parse_webhook_payload(self, payload):
+		event_data = payload.get("eventData") or {}
+		return {
+			"amount": event_data.get("amountPaid"),
+			"currency": event_data.get("currency"),
+			"status": self.normalize_transaction_status(event_data.get("paymentStatus")),
+			"provider_reference": event_data.get("transactionReference"),
+			"transaction_reference": event_data.get("transactionReference"),
+			"paid_on": event_data.get("paidOn"),
+			"settlement_status": event_data.get("settlementStatus") or "Unsettled",
+			"event_type": payload.get("eventType")
+		}
+
+	def get_webhook_event_reference(self, payload):
+		return payload.get("eventReference") or payload.get("eventData", {}).get("transactionReference")
+
+	def get_webhook_payment_reference(self, payload):
+		return payload.get("eventData", {}).get("paymentReference")
+
+	def get_webhook_transaction_reference(self, payload):
+		return payload.get("eventData", {}).get("transactionReference")
 
 	def normalize_transaction_status(self, provider_status):
 		status_map = {

@@ -30,3 +30,16 @@ class BaseProvider(object):
 
 	def normalize_transaction_status(self, provider_status):
 		raise NotImplementedError
+
+	def parse_webhook_payload(self, payload):
+		raise NotImplementedError
+
+	def get_webhook_event_reference(self, payload):
+		raise NotImplementedError
+
+	def get_webhook_payment_reference(self, payload):
+		raise NotImplementedError
+
+	def get_webhook_transaction_reference(self, payload):
+		raise NotImplementedError
+
