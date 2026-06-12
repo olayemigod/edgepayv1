@@ -1,0 +1,167 @@
+{
+ "actions": [],
+ "creation": "2026-06-11 11:32:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "provider",
+  "event_type",
+  "processing_status",
+  "event_reference",
+  "idempotency_key",
+  "received_on",
+  "signature_valid",
+  "links_section",
+  "linked_payment_request",
+  "linked_payment_transaction",
+  "payload_section",
+  "payload_json",
+  "error_section",
+  "error_message"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "EP-WHE-.YYYY.-",
+   "reqd": 1,
+   "default": "EP-WHE-.YYYY.-"
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Link",
+   "label": "Provider",
+   "options": "EdgePay Provider",
+   "reqd": 1
+  },
+  {
+   "fieldname": "event_type",
+   "fieldtype": "Data",
+   "label": "Event Type",
+   "description": "Provider webhook event type, e.g., 'invoice.paid'"
+  },
+  {
+   "fieldname": "processing_status",
+   "fieldtype": "Select",
+   "label": "Processing Status",
+   "options": "Pending\nProcessed\nFailed\nIgnored",
+   "default": "Pending",
+   "reqd": 1
+  },
+  {
+   "fieldname": "event_reference",
+   "fieldtype": "Data",
+   "label": "Event Reference",
+   "search_index": 1,
+   "description": "Unique event identifier sent by the provider"
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "search_index": 1,
+   "description": "De-duplication key"
+  },
+  {
+   "fieldname": "received_on",
+   "fieldtype": "Datetime",
+   "label": "Received On"
+  },
+  {
+   "default": "0",
+   "fieldname": "signature_valid",
+   "fieldtype": "Check",
+   "label": "Signature Valid"
+  },
+  {
+   "fieldname": "links_section",
+   "fieldtype": "Section Break",
+   "label": "Linked Documents"
+  },
+  {
+   "fieldname": "linked_payment_request",
+   "fieldtype": "Link",
+   "label": "Linked Payment Request",
+   "options": "EdgePay Payment Request"
+  },
+  {
+   "fieldname": "linked_payment_transaction",
+   "fieldtype": "Link",
+   "label": "Linked Payment Transaction",
+   "options": "EdgePay Payment Transaction"
+  },
+  {
+   "fieldname": "payload_section",
+   "fieldtype": "Section Break",
+   "label": "Payload JSON",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "payload_json",
+   "fieldtype": "Code",
+   "label": "Payload JSON",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "error_section",
+   "fieldtype": "Section Break",
+   "label": "Error Logging",
+   "depends_on": "eval:doc.processing_status=='Failed'"
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Text",
+   "label": "Error Message"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-11 11:32:00",
+ "modified_by": "Administrator",
+ "module": "EdgePay",
+ "name": "EdgePay Webhook Event",
+ "owner": "Administrator",
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "EdgePay Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "EdgePay Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "EdgePay User"
+  },
+  {
+   "read": 1,
+   "role": "EdgePay Auditor"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

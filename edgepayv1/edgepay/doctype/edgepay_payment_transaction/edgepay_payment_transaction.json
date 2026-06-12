@@ -1,0 +1,176 @@
+{
+ "actions": [],
+ "creation": "2026-06-11 11:32:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "payment_request",
+  "provider",
+  "status",
+  "transaction_reference",
+  "idempotency_key",
+  "amount_details_section",
+  "amount",
+  "currency",
+  "provider_response_section",
+  "provider_reference",
+  "paid_on",
+  "settlement_status",
+  "raw_response_section",
+  "raw_response_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "EP-TXN-.YYYY.-",
+   "reqd": 1,
+   "default": "EP-TXN-.YYYY.-"
+  },
+  {
+   "fieldname": "payment_request",
+   "fieldtype": "Link",
+   "label": "Payment Request",
+   "options": "EdgePay Payment Request",
+   "reqd": 1
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Link",
+   "label": "Provider",
+   "options": "EdgePay Provider",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nSuccess\nFailed\nRefunded",
+   "default": "Pending",
+   "reqd": 1
+  },
+  {
+   "fieldname": "transaction_reference",
+   "fieldtype": "Data",
+   "label": "Transaction Reference",
+   "reqd": 1,
+   "unique": 1,
+   "search_index": 1,
+   "description": "Unique transaction reference generated internally or by provider"
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "search_index": 1,
+   "description": "Unique key to prevent duplicate transaction registration"
+  },
+  {
+   "fieldname": "amount_details_section",
+   "fieldtype": "Section Break",
+   "label": "Amount Details"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "reqd": 1,
+   "options": "currency"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "reqd": 1
+  },
+  {
+   "fieldname": "provider_response_section",
+   "fieldtype": "Section Break",
+   "label": "Provider Response Details"
+  },
+  {
+   "fieldname": "provider_reference",
+   "fieldtype": "Data",
+   "label": "Provider Reference",
+   "read_only": 1
+  },
+  {
+   "fieldname": "paid_on",
+   "fieldtype": "Datetime",
+   "label": "Paid On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "settlement_status",
+   "fieldtype": "Select",
+   "label": "Settlement Status",
+   "options": "Unsettled\nSettled\nPending",
+   "default": "Unsettled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "raw_response_section",
+   "fieldtype": "Section Break",
+   "label": "Raw Response Log",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "raw_response_json",
+   "fieldtype": "Code",
+   "label": "Raw Response JSON",
+   "options": "JSON",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-11 11:32:00",
+ "modified_by": "Administrator",
+ "module": "EdgePay",
+ "name": "EdgePay Payment Transaction",
+ "owner": "Administrator",
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "EdgePay Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "EdgePay Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "EdgePay User"
+  },
+  {
+   "read": 1,
+   "role": "EdgePay Auditor"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

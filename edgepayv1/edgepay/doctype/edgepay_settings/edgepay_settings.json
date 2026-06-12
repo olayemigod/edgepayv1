@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "creation": "2026-06-11 11:32:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enable_edgepay",
+  "default_provider",
+  "webhook_base_url",
+  "require_signature_validation",
+  "enable_debug_logging",
+  "default_currency",
+  "sandbox_mode"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enable_edgepay",
+   "fieldtype": "Check",
+   "label": "Enable EdgePay"
+  },
+  {
+   "fieldname": "default_provider",
+   "fieldtype": "Link",
+   "label": "Default Provider",
+   "options": "EdgePay Provider"
+  },
+  {
+   "fieldname": "webhook_base_url",
+   "fieldtype": "Data",
+   "label": "Webhook Base URL",
+   "description": "Base URL for incoming payment webhooks"
+  },
+  {
+   "default": "1",
+   "fieldname": "require_signature_validation",
+   "fieldtype": "Check",
+   "label": "Require Signature Validation"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_debug_logging",
+   "fieldtype": "Check",
+   "label": "Enable Debug Logging"
+  },
+  {
+   "fieldname": "default_currency",
+   "fieldtype": "Link",
+   "label": "Default Currency",
+   "options": "Currency"
+  },
+  {
+   "default": "0",
+   "fieldname": "sandbox_mode",
+   "fieldtype": "Check",
+   "label": "Sandbox Mode"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-06-11 11:32:00",
+ "modified_by": "Administrator",
+ "module": "EdgePay",
+ "name": "EdgePay Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "EdgePay Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "EdgePay Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

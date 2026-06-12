@@ -82,6 +82,20 @@ app_license = "mit"
 # 	"filters": "edgepayv1.utils.jinja_filters"
 # }
 
+fixtures = [
+	{
+		"dt": "Role",
+		"filters": [
+			["role_name", "in", [
+				"EdgePay Admin",
+				"EdgePay Manager",
+				"EdgePay User",
+				"EdgePay Auditor"
+			]]
+		]
+	}
+]
+
 # Installation
 # ------------
 
