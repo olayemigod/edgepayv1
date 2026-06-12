@@ -13,6 +13,7 @@
   "base_url",
   "api_key",
   "secret_key",
+  "contract_code",
   "capabilities_section",
   "supports_checkout",
   "supports_virtual_account",
@@ -76,6 +77,12 @@
    "fieldname": "secret_key",
    "fieldtype": "Password",
    "label": "Secret Key"
+  },
+  {
+   "fieldname": "contract_code",
+   "fieldtype": "Data",
+   "label": "Contract Code",
+   "description": "Provider contract code, e.g. Monnify contract code"
   },
   {
    "fieldname": "capabilities_section",

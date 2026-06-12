@@ -5,6 +5,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enable_edgepay",
+  "allow_external_http_calls",
   "default_provider",
   "webhook_base_url",
   "require_signature_validation",
@@ -18,6 +19,13 @@
    "fieldname": "enable_edgepay",
    "fieldtype": "Check",
    "label": "Enable EdgePay"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_external_http_calls",
+   "fieldtype": "Check",
+   "label": "Allow External HTTP Calls",
+   "description": "Explicit gate enabling live HTTP/external provider calls"
   },
   {
    "fieldname": "default_provider",

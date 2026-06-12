@@ -11,14 +11,52 @@ class BaseHTTPClient(object):
 class MonnifyClient(BaseHTTPClient):
 	def __init__(self, provider_doc):
 		self.provider_doc = provider_doc
+		self.timeout = 30
 
 	def post(self, url, payload, headers=None):
-		# Prevent any live external HTTP calls in this phase
-		raise NotImplementedError("Live HTTP calls are not implemented in this phase.")
+		if not is_live_call_allowed(self.provider_doc):
+			frappe.throw(_("External HTTP calls are disabled by default. Enable 'Allow External HTTP Calls' in EdgePay Settings to run live operations."))
+
+		# Import locally to avoid circular dependency
+		from edgepayv1.edgepay.services.providers.monnify_auth import get_monnify_token
+		token = get_monnify_token(self.provider_doc)
+
+		headers = headers or {}
+		headers["Authorization"] = f"Bearer {token}"
+		headers["Content-Type"] = "application/json"
+
+		import requests
+		from edgepayv1.edgepay.services.security import redact_secrets
+
+		try:
+			response = requests.post(url, json=payload, headers=headers, timeout=self.timeout)
+			response.raise_for_status()
+			return response.json()
+		except Exception as e:
+			redacted_msg = redact_secrets(str(e))
+			frappe.throw(_("Monnify API POST call failed: {0}").format(redacted_msg))
 
 	def get(self, url, headers=None):
-		# Prevent any live external HTTP calls in this phase
-		raise NotImplementedError("Live HTTP calls are not implemented in this phase.")
+		if not is_live_call_allowed(self.provider_doc):
+			frappe.throw(_("External HTTP calls are disabled by default. Enable 'Allow External HTTP Calls' in EdgePay Settings to run live operations."))
+
+		# Import locally to avoid circular dependency
+		from edgepayv1.edgepay.services.providers.monnify_auth import get_monnify_token
+		token = get_monnify_token(self.provider_doc)
+
+		headers = headers or {}
+		headers["Authorization"] = f"Bearer {token}"
+
+		import requests
+		from edgepayv1.edgepay.services.security import redact_secrets
+
+		try:
+			response = requests.get(url, headers=headers, timeout=self.timeout)
+			response.raise_for_status()
+			return response.json()
+		except Exception as e:
+			redacted_msg = redact_secrets(str(e))
+			frappe.throw(_("Monnify API GET call failed: {0}").format(redacted_msg))
 
 class SimulatedMonnifyClient(BaseHTTPClient):
 	def __init__(self, provider_doc=None):
@@ -65,3 +103,20 @@ def set_client_override(provider_code, client_instance):
 
 def clear_client_overrides():
 	_CLIENT_OVERRIDES.clear()
+
+def is_live_call_allowed(provider_doc):
+	"""
+	Returns True if live/external calls are permitted by settings and configuration.
+	"""
+	if not frappe.db.exists("EdgePay Settings", "EdgePay Settings"):
+		return False
+	settings = frappe.get_doc("EdgePay Settings")
+	if not settings.enable_edgepay:
+		return False
+	if not getattr(settings, "allow_external_http_calls", 0):
+		return False
+	if not provider_doc.enabled:
+		return False
+	if not provider_doc.get_password("api_key") or not provider_doc.get_password("secret_key"):
+		return False
+	return True

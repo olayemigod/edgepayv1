@@ -84,9 +84,9 @@ class TestCheckout(FrappeTestCase):
 	def test_no_external_http_calls_are_made(self):
 		set_client_override("monnify", MonnifyClient(self.provider))
 		
-		with self.assertRaises(NotImplementedError) as context:
+		with self.assertRaises(frappe.ValidationError) as context:
 			initialize_checkout(self.payment_request.name)
-		self.assertIn("Live HTTP calls are not implemented", str(context.exception))
+		self.assertIn("external http calls are disabled", str(context.exception).lower())
 
 	def test_initialization_is_idempotent(self):
 		res1 = initialize_checkout(self.payment_request.name)

@@ -5,14 +5,14 @@ from frappe import _
 
 class MonnifyProvider(BaseProvider):
 	def validate_configuration(self):
-		if not self.provider_doc.base_url:
-			# Fallback url resolution checks are handled in get_base_url,
-			# but require api/secret keys to be populated.
-			pass
 		if not self.provider_doc.api_key:
 			frappe.throw(_("API Key / Public Key is missing in Monnify configuration"))
 		if not self.provider_doc.secret_key:
 			frappe.throw(_("Secret Key is missing in Monnify configuration"))
+		settings = frappe.get_doc("EdgePay Settings")
+		if getattr(settings, "allow_external_http_calls", 0):
+			if not getattr(self.provider_doc, "contract_code", None):
+				frappe.throw(_("Contract Code is required for Monnify external calls"))
 
 	def get_base_url(self):
 		# Fallback resolution: check provider doc sandbox_mode and global settings sandbox_mode
@@ -35,7 +35,7 @@ class MonnifyProvider(BaseProvider):
 			"paymentReference": payment_request.request_reference,
 			"paymentDescription": payment_request.payment_purpose or "Payment",
 			"currencyCode": payment_request.currency,
-			"contractCode": "", 
+			"contractCode": getattr(self.provider_doc, "contract_code", None) or "", 
 		}
 
 	def parse_checkout_response(self, response):
