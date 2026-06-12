@@ -206,20 +206,29 @@ def process_provider_webhook(provider_code):
 	Whitelisted guest endpoint for receiving webhooks.
 	Reads raw body and headers securely, runs signature verification, and maps response.
 	"""
-	# Get raw body from request context
-	if hasattr(frappe.local, "request"):
-		raw_body = frappe.local.request.get_data()
-		headers = frappe.local.request.headers
-	else:
-		# Fallback for tests / console runs
-		raw_body = frappe.request.data if hasattr(frappe, "request") else ""
-		headers = frappe.request.headers if hasattr(frappe, "request") else {}
+	try:
+		# Get raw body from request context
+		if hasattr(frappe.local, "request"):
+			raw_body = frappe.local.request.get_data()
+			headers = frappe.local.request.headers
+		else:
+			# Fallback for tests / console runs
+			raw_body = frappe.request.data if hasattr(frappe, "request") else ""
+			headers = frappe.request.headers if hasattr(frappe, "request") else {}
+			
+		result = process_webhook_event(provider_code, headers, raw_body)
 		
-	result = process_webhook_event(provider_code, headers, raw_body)
-	
-	return {
-		"status": result.get("status"),
-		"event": result.get("event"),
-		"processing_status": result.get("processing_status"),
-		"duplicate": result.get("duplicate", False)
-	}
+		return {
+			"status": result.get("status"),
+			"event": result.get("event"),
+			"processing_status": result.get("processing_status"),
+			"duplicate": result.get("duplicate", False)
+		}
+	except Exception as e:
+		frappe.log_error(f"EdgePay Webhook Exception: {str(e)}", "EdgePay Webhook Error")
+		if hasattr(frappe, "local") and hasattr(frappe.local, "response"):
+			frappe.local.response["http_status_code"] = 400
+		return {
+			"status": "failed",
+			"message": "An error occurred during webhook processing"
+		}

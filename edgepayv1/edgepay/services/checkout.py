@@ -6,6 +6,25 @@ from edgepayv1.edgepay.services.providers.registry import get_provider_instance
 from edgepayv1.edgepay.services.clients import get_client
 from edgepayv1.edgepay.services.logging import log
 
+def check_and_mark_expired(pr, save=True):
+	"""
+	Checks if a Payment Request is past its expires_on time, updates its status to 'Expired'
+	if needed, and saves it. Returns True if expired.
+	"""
+	if pr.expires_on:
+		from frappe.utils import now_datetime, get_datetime
+		if now_datetime() > get_datetime(pr.expires_on):
+			if pr.status not in ["Paid", "Failed", "Cancelled", "Expired"]:
+				pr.status = "Expired"
+				if save:
+					pr.save(ignore_permissions=True)
+					if not frappe.flags.in_test:
+						frappe.db.commit()
+				return True
+			elif pr.status == "Expired":
+				return True
+	return False
+
 def initialize_checkout(payment_request_name):
 	"""
 	Loads an EdgePay Payment Request and initializes checkout using the provider registry.
@@ -13,6 +32,10 @@ def initialize_checkout(payment_request_name):
 	"""
 	pr = frappe.get_doc("EdgePay Payment Request", payment_request_name)
 	
+	# Block expired payment requests
+	if check_and_mark_expired(pr):
+		frappe.throw(_("Cannot initialize checkout for an expired Payment Request"))
+
 	# Block paid, cancelled, failed, expired requests
 	# Valid status options: Draft, Initiated, Paid, Failed, Expired, Cancelled
 	if pr.status in ["Paid", "Failed", "Expired", "Cancelled"]:

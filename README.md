@@ -79,3 +79,138 @@ EDGEPAY_RUN_MONNIFY_SANDBOX_SMOKE=1 EDGEPAY_MONNIFY_SANDBOX_API_KEY=your_sandbox
 > [!WARNING]
 > **Security Gating**: Real credentials must never be committed to repository files, tests, JSON fixtures, docs, or screenshots. The utility automatically enables live calls temporarily and restores configurations to safe defaults in a `finally` block.
 
+#### 7. API Contract & Lifecycle Flows
+
+##### Lifecycle Flow Diagram
+The complete Payment lifecycle consists of four main steps:
+1. **Create Payment Request**: The product app calls `create_payment_request` to get a standardized request reference.
+2. **Initialize Checkout**: The user is redirected to the returned `checkout_url`.
+3. **Verify Transaction**: Once the redirect completes, the client app calls `verify_payment_request_transaction` to check status server-side.
+4. **Webhook Processing**: Authoritative asynchronous confirmation via `process_provider_webhook`.
+
+```mermaid
+sequenceDiagram
+    participant App as Product App
+    participant EP as EdgePay Core
+    participant Prov as Payment Provider (Monnify)
+    participant User as Customer
+    
+    App->>EP: create_payment_request(provider, amount, currency, ...)
+    EP-->>App: Return payment_request name & request_reference
+    
+    App->>EP: initialize_payment_request_checkout(payment_request_name)
+    EP->>Prov: POST /init-transaction
+    Prov-->>EP: Return checkoutUrl & providerReference
+    EP-->>App: Return safe checkout_url & provider_reference
+    
+    App->>User: Redirect to checkout_url
+    User->>Prov: Pay
+    Prov->>User: Redirect back to callback/redirect URL (untrusted hints)
+    User->>App: Callback landing page (untrusted callback hints)
+    App->>EP: verify_payment_request_transaction(payment_request_name)
+    EP->>Prov: GET /query (Server-Side Verification)
+    Prov-->>EP: Return authentic status
+    EP-->>App: Return safe status (Paid/Failed/Pending)
+    
+    Prov->>EP: POST Webhook Event (HMAC Signed)
+    EP->>EP: verify_webhook_signature()
+    EP->>EP: Update statuses to Paid/Failed (Idempotent, Authoritative)
+```
+
+##### API Methods
+
+###### `create_payment_request` (Authenticated Only)
+Creates a Payment Request and returns safe fields only.
+* **Arguments**:
+  - `provider` (string, e.g. `"Test Provider"`)
+  - `amount` (float, e.g. `2500.00`)
+  - `currency` (string, e.g. `"NGN"`)
+  - `customer_name` (string)
+  - `customer_email` (string)
+  - `customer_phone` (string, optional)
+  - `payment_purpose` (string, optional)
+  - `source_app` (string, optional)
+  - `source_doctype` (string, optional)
+  - `source_name` (string, optional)
+  - `expires_on` (datetime, optional)
+  - `metadata_json` (JSON string/dict, optional)
+  - `idempotency_key` (string, optional)
+* **Response**:
+  ```json
+  {
+    "ok": true,
+    "status": "success",
+    "message": "Payment request created successfully",
+    "data": {
+      "payment_request": "EP-PRQ-2026-00054",
+      "request_reference": "REQ-ABC123XYZ456",
+      "status": "Draft",
+      "amount": 2500.0,
+      "currency": "NGN",
+      "provider": "Test Provider",
+      "expires_on": "2026-06-12 23:59:59"
+    }
+  }
+  ```
+
+###### `initialize_payment_request_checkout` (Authenticated Only)
+Initializes checkout and generates provider parameters.
+* **Response**:
+  ```json
+  {
+    "ok": true,
+    "status": "success",
+    "message": "Checkout initialized successfully",
+    "data": {
+      "payment_request": "EP-PRQ-2026-00054",
+      "status": "Initiated",
+      "checkout_url": "https://sandbox.monnify.com/checkout/REQ-ABC123XYZ456",
+      "provider_reference": "MON-REQ-ABC123XYZ456-TX",
+      "expires_on": "2026-06-12 23:59:59"
+    }
+  }
+  ```
+
+###### `verify_payment_request_transaction` (Authenticated Only)
+Performs server-side query to the provider and updates request status.
+* **Response**:
+  ```json
+  {
+    "ok": true,
+    "status": "success",
+    "message": "Transaction verified successfully",
+    "data": {
+      "payment_request": "EP-PRQ-2026-00054",
+      "request_status": "Paid",
+      "transaction": "EP-TXN-2026-00009",
+      "transaction_status": "Success",
+      "provider_reference": "MON-REQ-ABC123XYZ456-TX",
+      "amount": 2500.0,
+      "currency": "NGN",
+      "paid_on": "2026-06-12 22:58:39"
+    }
+  }
+  ```
+
+###### `handle_checkout_callback` (Guest Accessible)
+Safe callback/redirect handler. Treats query parameters as untrusted hints.
+* **Response**:
+  ```json
+  {
+    "ok": true,
+    "status": "success",
+    "message": "Callback processed successfully",
+    "data": {
+      "payment_request": "EP-PRQ-2026-00054",
+      "status": "Paid",
+      "message": "Payment verified successfully"
+    }
+  }
+  ```
+
+##### Security Best Practices
+* **Callbacks are not Proof of Payment**: Redirect/callback parameters are untrusted user input. Do not trust them alone. Always run server-side verification (`verify_payment_request_transaction`) or wait for the signed webhook event before marking any order or invoice as fulfilled.
+* **Authoritative Actions**: Webhooks and server-side verification are the only authoritative ways to resolve payment status.
+* **Accounting Mutations**: All accounting and ledger mutations (like creating Sales Invoice payment entries or Journal Entries) are explicitly excluded from the EdgePay core orchestration layer and are handled in downstream app-specific connectors.
+* **Do Not Log or Commit Credentials**: Never save or print API keys, secret keys, or bearer tokens in code, test files, logs, database payloads, or git commits. Use Password fields or redacted structures at all times.
+

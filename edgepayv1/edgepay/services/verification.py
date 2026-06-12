@@ -16,6 +16,9 @@ def verify_transaction(payment_request_name):
 	"""
 	pr = frappe.get_doc("EdgePay Payment Request", payment_request_name)
 	
+	from edgepayv1.edgepay.services.checkout import check_and_mark_expired
+	check_and_mark_expired(pr)
+
 	if not pr.provider:
 		frappe.throw(_("Payment Request has no provider specified"))
 		
