@@ -69,5 +69,13 @@ Bearer tokens obtained via Basic Auth POST request to `/v1/auth/login` are cache
 - **API Key**: Found on the Monnify dashboard. Saved securely as a `Password` field.
 - **Secret Key**: Found on the Monnify dashboard. Saved securely as a `Password` field.
 - **Contract Code**: Monnify contract code (required for live/sandbox calls).
-- **Webhook Signature**: Computed locally using HMAC-SHA512.
+- **Webhook Signature**: Webhook secret / signature validation configuration computed locally using HMAC-SHA512.
+
+#### 6. Monnify Sandbox Smoke Test Utility
+Developers can trigger a live connectivity verification command against Monnify Sandbox endpoints to test authentication, checkout initialization, and transaction verification:
+```bash
+EDGEPAY_RUN_MONNIFY_SANDBOX_SMOKE=1 EDGEPAY_MONNIFY_SANDBOX_API_KEY=your_sandbox_api_key EDGEPAY_MONNIFY_SANDBOX_SECRET_KEY=your_sandbox_secret_key EDGEPAY_MONNIFY_SANDBOX_CONTRACT_CODE=your_sandbox_contract_code bench --site posnext.local execute edgepayv1.edgepay.tools.monnify_sandbox_smoke.run_monnify_sandbox_smoke
+```
+> [!WARNING]
+> **Security Gating**: Real credentials must never be committed to repository files, tests, JSON fixtures, docs, or screenshots. The utility automatically enables live calls temporarily and restores configurations to safe defaults in a `finally` block.
 
