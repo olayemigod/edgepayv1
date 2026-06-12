@@ -272,4 +272,135 @@ Creates or returns an active Payment Request from the generic source payload.
 * **Safe Status Update**: The Generic Connector handler `handle_payment_status_update` logs a safe operational message. It does not perform ledger entries, journal entries, or update status fields on the source document itself in this core phase.
 * **No Expose of Source Internals**: API responses never leak internal document structures or raw metadata unless explicitly sanitized. All payloads are recursively redacted.
 
+#### 9. EdgePay Connector SDK Reference
+
+Product apps should not call whitelisted API methods directly or interact with database documents. Instead, they must interact via the stable internal SDK functions exposed in `edgepayv1.edgepay.sdk`.
+
+##### SDK Import and Initialization
+```python
+from edgepayv1.edgepay import sdk
+```
+
+##### SDK Functions
+
+###### `sdk.create_source_payment_request(source_context)`
+Wraps payment request creation. Validates context against the appropriate profile.
+* **Arguments**: `source_context` (dict)
+* **Returns**: Safe normalized dict `{ "ok": bool, "status": str, "message": str, "data": dict }`
+
+###### `sdk.initialize_source_checkout(payment_request_name)`
+Initializes the checkout session for a payment request.
+* **Arguments**: `payment_request_name` (str)
+* **Returns**: Safe normalized dict with `checkout_url` and `provider_reference`.
+
+###### `sdk.verify_source_payment(payment_request_name)`
+Performs authoritative server-side verification and logs transaction records.
+* **Arguments**: `payment_request_name` (str)
+* **Returns**: Safe status details, paid date, amount, currency, and provider references.
+
+###### `sdk.get_source_payment_status(payment_request_name)`
+Read-only wrapper to check payment request status without database mutation.
+* **Arguments**: `payment_request_name` (str)
+* **Returns**: Current payment request status fields.
+
+###### `sdk.get_source_transaction_status(payment_request_name=None, provider_reference=None, transaction_reference=None)`
+Read-only wrapper to query transaction status by reference fields. Does not mutate records.
+* **Arguments**: Optional parameters to filter transaction records.
+* **Returns**: Safe transaction status fields.
+
+##### SDK Integration Lifecycle Flow
+1. **Create Request**: Host app builds `source_context` and calls `sdk.create_source_payment_request(source_context)`.
+2. **Initialize Checkout**: Host app calls `sdk.initialize_source_checkout(payment_request_name)`.
+3. **Redirect**: Host app redirects customer to the returned `checkout_url`.
+4. **Authoritative Verification**: Upon redirect return, or asynchronous webhook execution, EdgePay verifies transaction status server-side.
+5. **Handoff Notification**: EdgePay builds a safe handoff payload and calls the registered app's connector `handle_payment_status_update` hook.
+6. **Fulfillment / Ledger Entry**: The host app's connector intercepts the handoff notification and performs its own order updates and accounting mutations in its own package context.
+
+##### Example `source_context` Payloads for Product Apps
+
+###### ERPNext
+```python
+{
+  "source_app": "erpnext",
+  "source_doctype": "Sales Invoice",
+  "source_name": "ACC-SINV-2026-0001",
+  "amount": 125000.00,
+  "currency": "NGN",
+  "customer_name": "Acme Corp",
+  "customer_email": "billing@acme.com",
+  "customer_phone": "+2348011112222",
+  "payment_purpose": "Invoice Payment ACC-SINV-2026-0001",
+  "idempotency_key": "idemp_erpnext_invoice_10023",
+  "metadata": {"project_id": "PRJ-901"}
+}
+```
+
+###### POSnext
+```python
+{
+  "source_app": "posnext",
+  "source_doctype": "POS Invoice",
+  "source_name": "POS-INV-2026-00045",
+  "amount": 15450.00,
+  "currency": "NGN",
+  "customer_name": "Jane Doe",
+  "customer_email": "jane.doe@posnext.local",
+  "customer_phone": "+2348033334444",
+  "payment_purpose": "POS Checkout POS-INV-2026-00045",
+  "idempotency_key": "idemp_posnext_invoice_77812",
+  "metadata": {"pos_profile": "Main Register"}
+}
+```
+
+###### RetailEdge
+```python
+{
+  "source_app": "retailedge",
+  "source_doctype": "Sales Invoice",
+  "source_name": "SINV-2026-092",
+  "amount": 9500.00,
+  "currency": "NGN",
+  "customer_name": "Alice Smith",
+  "customer_email": "alice@retailedge.com",
+  "customer_phone": "+2348055556666",
+  "payment_purpose": "Retail Store Checkout SINV-2026-092",
+  "idempotency_key": "idemp_retailedge_sales_invoice_092",
+  "metadata": {"store_id": "Lagos-Main"}
+}
+```
+
+###### VetEdge
+```python
+{
+  "source_app": "vetedge",
+  "source_doctype": "Clinical Consultation",
+  "source_name": "CLINIC-CON-2026-4421",
+  "amount": 42000.00,
+  "currency": "NGN",
+  "customer_name": "Dr. Dog Lover",
+  "customer_email": "petowner@vetedge.com",
+  "customer_phone": "+2348077778888",
+  "payment_purpose": "Veterinary Consultation CLINIC-CON-2026-4421",
+  "idempotency_key": "idemp_vetedge_clinic_con_4421",
+  "metadata": {"pet_name": "Rex", "pet_type": "Canine"}
+}
+```
+
+###### Generic Fallback App
+```python
+{
+  "source_app": "edgesuite",
+  "source_doctype": "Custom Order",
+  "source_name": "ORD-1234",
+  "amount": 50000.00,
+  "currency": "NGN",
+  "customer_name": "EdgeSuite User",
+  "customer_email": "user@edgesuite.com",
+  "customer_phone": "+2348099990000",
+  "payment_purpose": "Service Payment ORD-1234",
+  "idempotency_key": "idemp_edgesuite_ord_1234",
+  "metadata": {}
+}
+```
+
 

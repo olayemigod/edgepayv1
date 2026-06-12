@@ -61,13 +61,14 @@ def create_payment_request_from_source(source_context):
 		source_name=payload.get("source_name"),
 		expires_on=payload.get("expires_on"),
 		metadata_json=payload.get("metadata_json"),
-		idempotency_key=payload.get("idempotency_key")
+		idempotency_key=payload.get("idempotency_key"),
+		ignore_auth=True
 	)
 	
 	from edgepayv1.edgepay.services.security import redact_secrets
 	return redact_secrets(res)
 
-def notify_source_payment_status(payment_request_name, transaction_name=None):
+def notify_source_payment_status(payment_request_name, transaction_name=None, event_source="verification"):
 	"""
 	Internal event dispatcher invoked when status updates occur.
 	"""
@@ -79,7 +80,26 @@ def notify_source_payment_status(payment_request_name, transaction_name=None):
 			return
 
 		connector = get_connector(pr.source_app)
-		connector.handle_payment_status_update(pr, txn)
+		
+		# Build status handoff payload
+		handoff_payload = {
+			"source_app": pr.source_app,
+			"source_doctype": pr.source_doctype,
+			"source_name": pr.source_name,
+			"payment_request": pr.name,
+			"request_status": pr.status,
+			"transaction_status": txn.status if txn else None,
+			"amount": pr.amount,
+			"currency": pr.currency,
+			"provider_reference": pr.provider_reference,
+			"paid_on": txn.paid_on if txn else None,
+			"event_source": event_source
+		}
+		
+		from edgepayv1.edgepay.services.security import redact_secrets
+		safe_payload = redact_secrets(handoff_payload)
+		
+		connector.handle_payment_status_update(pr, txn, safe_payload)
 	except Exception as e:
 		from edgepayv1.edgepay.services.logging import log
 		log(f"Failed to notify source payment status for {payment_request_name}: {str(e)}", level="error")

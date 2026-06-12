@@ -15,7 +15,7 @@ class BaseSourceConnector(object):
 		"""
 		raise NotImplementedError
 
-	def handle_payment_status_update(self, payment_request, transaction=None):
+	def handle_payment_status_update(self, payment_request, transaction=None, safe_payload=None):
 		"""
 		Invoked when a Payment Request or Transaction status changes.
 		Handles propagation/notification (e.g. via background tasks).

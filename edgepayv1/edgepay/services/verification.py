@@ -141,7 +141,7 @@ def verify_transaction(payment_request_name):
 	pr.save(ignore_permissions=True)
 	
 	from edgepayv1.edgepay.services.connectors import notify_source_payment_status
-	notify_source_payment_status(pr.name, txn.name)
+	notify_source_payment_status(pr.name, txn.name, event_source="verification")
 	
 	log(f"Transaction verification completed for {pr.name}. Request Status: {pr.status}, Transaction Status: {txn.status}", level="info")
 	

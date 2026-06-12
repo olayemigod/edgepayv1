@@ -74,14 +74,14 @@ def create_payment_request(
 	provider, amount, currency, customer_name, customer_email,
 	customer_phone=None, payment_purpose=None, source_app=None,
 	source_doctype=None, source_name=None, expires_on=None,
-	metadata_json=None, idempotency_key=None
+	metadata_json=None, idempotency_key=None, ignore_auth=False
 ):
 	"""
 	Whitelisted API to safely create a new Payment Request.
 	Requires authenticated access. Enforces safe return fields and idempotency.
 	"""
 	try:
-		if frappe.session.user == "Guest":
+		if not ignore_auth and frappe.session.user == "Guest":
 			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
 		from edgepayv1.edgepay.services.security import redact_secrets
 		from edgepayv1.edgepay.services.checkout import check_and_mark_expired

@@ -41,11 +41,11 @@ class GenericSourceConnector(BaseSourceConnector):
 			"idempotency_key": source_context.get("idempotency_key")
 		}
 
-	def handle_payment_status_update(self, payment_request, transaction=None):
+	def handle_payment_status_update(self, payment_request, transaction=None, safe_payload=None):
 		# Default generic connector is read-only / no-op.
 		# Log only a safe operational message.
 		from edgepayv1.edgepay.services.logging import log
-		log(f"Status update received for {payment_request.name} (Source: {payment_request.source_app}/{payment_request.source_doctype}/{payment_request.source_name}). No-op handoff executed.", level="info")
+		log(f"Status update received for {payment_request.name} (Source: {payment_request.source_app}/{payment_request.source_doctype}/{payment_request.source_name}). No-op handoff executed. Payload: {safe_payload}", level="info")
 
 	def get_safe_source_summary(self, source_context):
 		# Returns a safe/sanitized summary (no secrets or document internals)
