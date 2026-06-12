@@ -53,8 +53,12 @@ class MonnifyProvider(BaseProvider):
 	def parse_verification_response(self, response):
 		return {
 			"amount": response.get("amount"),
+			"currency": response.get("currencyCode"),
 			"status": self.normalize_transaction_status(response.get("paymentStatus")),
-			"provider_reference": response.get("transactionReference")
+			"provider_reference": response.get("transactionReference"),
+			"transaction_reference": response.get("transactionReference"),
+			"paid_on": response.get("paidOn"),
+			"settlement_status": response.get("settlementStatus") or "Unsettled"
 		}
 
 	def verify_webhook_signature(self, payload, headers):
