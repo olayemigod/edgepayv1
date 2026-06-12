@@ -214,3 +214,62 @@ Safe callback/redirect handler. Treats query parameters as untrusted hints.
 * **Accounting Mutations**: All accounting and ledger mutations (like creating Sales Invoice payment entries or Journal Entries) are explicitly excluded from the EdgePay core orchestration layer and are handled in downstream app-specific connectors.
 * **Do Not Log or Commit Credentials**: Never save or print API keys, secret keys, or bearer tokens in code, test files, logs, database payloads, or git commits. Use Password fields or redacted structures at all times.
 
+#### 8. Connector Layer Foundation
+
+The connector layer acts as a decoupled interface mapping source documents to EdgePay Payment Requests without hard imports or dependencies on product apps like ERPNext, POSnext, RetailEdge, VetEdge, or CoreEdge.
+
+##### Dynamic Handoff Architecture
+1. **Source Context Input**: Product apps build a `source_context` dictionary payload.
+2. **Connector Registry**: Resolves the correct app connector using `get_connector(source_app)`. Defaults to `GenericSourceConnector` for unregistered apps.
+3. **Payload Mapping**: Standardizes details into an EdgePay payload.
+4. **Idempotent Creation**: `create_payment_request_from_source` is invoked to create or retrieve the request.
+5. **Status Update Dispatcher**: The internal `notify_source_payment_status` event notifier calls back to the app connector. In this phase, the generic fallback logs safe messages only without muting source documents.
+
+##### Example `source_context` Payload
+```json
+{
+  "provider": "Monnify Sandbox Smoke Test",
+  "source_app": "RetailEdge",
+  "source_doctype": "Sales Invoice",
+  "source_name": "SINV-2026-0001",
+  "amount": 3000.0,
+  "currency": "NGN",
+  "customer_name": "John Doe",
+  "customer_email": "john.doe@example.com",
+  "customer_phone": "+2348000000000",
+  "payment_purpose": "Invoice Payment SINV-2026-0001",
+  "idempotency_key": "idemp_invoice_key_777",
+  "metadata_json": {
+    "custom_reference": "ref-1002"
+  }
+}
+```
+
+##### API Method
+
+###### `create_payment_request_from_source(source_context)` (Authenticated Only)
+Creates or returns an active Payment Request from the generic source payload.
+* **Response**:
+  ```json
+  {
+    "ok": true,
+    "status": "success",
+    "message": "Payment request created successfully",
+    "data": {
+      "payment_request": "EP-PRQ-2026-00054",
+      "request_reference": "REQ-ABC123XYZ456",
+      "status": "Draft",
+      "amount": 3000.0,
+      "currency": "NGN",
+      "provider": "Monnify Sandbox Smoke Test",
+      "expires_on": null
+    }
+  }
+  ```
+
+##### Decoupling Rules & Constraints
+* **No Direct Imports**: EdgePay does not import any module from ERPNext, POSnext, RetailEdge, VetEdge, or CoreEdge. Custom app connectors extend `BaseSourceConnector` and register themselves using `register_connector(app_name, connector_instance)`.
+* **Safe Status Update**: The Generic Connector handler `handle_payment_status_update` logs a safe operational message. It does not perform ledger entries, journal entries, or update status fields on the source document itself in this core phase.
+* **No Expose of Source Internals**: API responses never leak internal document structures or raw metadata unless explicitly sanitized. All payloads are recursively redacted.
+
+

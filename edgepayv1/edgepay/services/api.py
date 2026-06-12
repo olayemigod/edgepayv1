@@ -424,3 +424,25 @@ def handle_checkout_callback(payment_request=None, provider_reference=None, tran
 			"message": "An error occurred during verification",
 			"data": None
 		}
+
+@frappe.whitelist()
+def create_payment_request_from_source(source_context):
+	"""
+	Whitelisted API to create a Payment Request from a generic source context dictionary.
+	Requires authenticated access.
+	"""
+	try:
+		if frappe.session.user == "Guest":
+			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
+
+		from edgepayv1.edgepay.services.connectors.registry import create_payment_request_from_source as create_from_source
+		return create_from_source(source_context)
+	except Exception as e:
+		from edgepayv1.edgepay.services.security import redact_secrets
+		redacted_msg = redact_secrets(str(e))
+		return {
+			"ok": False,
+			"status": "error",
+			"message": redacted_msg,
+			"data": None
+		}

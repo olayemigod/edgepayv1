@@ -187,6 +187,9 @@ def process_webhook_event(provider_code, headers, raw_body):
 	txn.save(ignore_permissions=True)
 	pr.save(ignore_permissions=True)
 	
+	from edgepayv1.edgepay.services.connectors import notify_source_payment_status
+	notify_source_payment_status(pr.name, txn.name)
+	
 	# Complete Webhook Event Doc
 	event_doc.linked_payment_request = pr.name
 	event_doc.linked_payment_transaction = txn.name
