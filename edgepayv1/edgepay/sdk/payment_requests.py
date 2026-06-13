@@ -84,3 +84,79 @@ def verify_source_payment(payment_request_name):
 			"message": redacted_msg,
 			"data": None
 		}
+
+def get_pending_payment_handoffs(source_app=None, limit=50):
+	"""
+	Safe wrapper to fetch pending status handoff events.
+	Returns safe normalized list of event dicts.
+	"""
+	try:
+		if frappe.session.user == "Guest":
+			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
+		
+		from edgepayv1.edgepay.services.handoff import get_pending_handoff_events
+		events = get_pending_handoff_events(source_app=source_app, limit=limit)
+		return {
+			"ok": True,
+			"status": "success",
+			"message": "Pending handoffs retrieved successfully",
+			"data": redact_secrets(events)
+		}
+	except Exception as e:
+		redacted_msg = redact_secrets(str(e))
+		return {
+			"ok": False,
+			"status": "error",
+			"message": redacted_msg,
+			"data": None
+		}
+
+def mark_payment_handoff_delivered(event_name):
+	"""
+	Safe wrapper to mark handoff event as delivered.
+	"""
+	try:
+		if frappe.session.user == "Guest":
+			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
+		
+		from edgepayv1.edgepay.services.handoff import mark_handoff_event_delivered
+		mark_handoff_event_delivered(event_name)
+		return {
+			"ok": True,
+			"status": "success",
+			"message": f"Handoff event {event_name} marked as delivered",
+			"data": None
+		}
+	except Exception as e:
+		redacted_msg = redact_secrets(str(e))
+		return {
+			"ok": False,
+			"status": "error",
+			"message": redacted_msg,
+			"data": None
+		}
+
+def mark_payment_handoff_failed(event_name, error_message=None):
+	"""
+	Safe wrapper to mark handoff event as failed.
+	"""
+	try:
+		if frappe.session.user == "Guest":
+			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
+		
+		from edgepayv1.edgepay.services.handoff import mark_handoff_event_failed
+		mark_handoff_event_failed(event_name, error_message=error_message)
+		return {
+			"ok": True,
+			"status": "success",
+			"message": f"Handoff event {event_name} marked as failed",
+			"data": None
+		}
+	except Exception as e:
+		redacted_msg = redact_secrets(str(e))
+		return {
+			"ok": False,
+			"status": "error",
+			"message": redacted_msg,
+			"data": None
+		}

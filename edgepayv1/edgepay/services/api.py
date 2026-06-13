@@ -446,3 +446,84 @@ def create_payment_request_from_source(source_context):
 			"message": redacted_msg,
 			"data": None
 		}
+
+@frappe.whitelist()
+def get_pending_payment_handoffs(source_app=None, limit=50):
+	"""
+	Whitelisted API to retrieve pending status handoffs.
+	Requires authenticated access.
+	"""
+	try:
+		if frappe.session.user == "Guest":
+			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
+		
+		from edgepayv1.edgepay.services.handoff import get_pending_handoff_events
+		events = get_pending_handoff_events(source_app=source_app, limit=limit)
+		return {
+			"ok": True,
+			"status": "success",
+			"message": "Pending handoffs retrieved successfully",
+			"data": events
+		}
+	except Exception as e:
+		from edgepayv1.edgepay.services.security import redact_secrets
+		return {
+			"ok": False,
+			"status": "error",
+			"message": redact_secrets(str(e)),
+			"data": None
+		}
+
+@frappe.whitelist()
+def mark_payment_handoff_delivered(event_name):
+	"""
+	Whitelisted API to mark a status handoff event as Delivered.
+	Requires authenticated access.
+	"""
+	try:
+		if frappe.session.user == "Guest":
+			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
+		
+		from edgepayv1.edgepay.services.handoff import mark_handoff_event_delivered
+		mark_handoff_event_delivered(event_name)
+		return {
+			"ok": True,
+			"status": "success",
+			"message": f"Handoff event {event_name} marked as delivered",
+			"data": None
+		}
+	except Exception as e:
+		from edgepayv1.edgepay.services.security import redact_secrets
+		return {
+			"ok": False,
+			"status": "error",
+			"message": redact_secrets(str(e)),
+			"data": None
+		}
+
+@frappe.whitelist()
+def mark_payment_handoff_failed(event_name, error_message=None):
+	"""
+	Whitelisted API to mark a status handoff event as Failed.
+	Requires authenticated access.
+	"""
+	try:
+		if frappe.session.user == "Guest":
+			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
+		
+		from edgepayv1.edgepay.services.handoff import mark_handoff_event_failed
+		mark_handoff_event_failed(event_name, error_message=error_message)
+		return {
+			"ok": True,
+			"status": "success",
+			"message": f"Handoff event {event_name} marked as failed",
+			"data": None
+		}
+	except Exception as e:
+		from edgepayv1.edgepay.services.security import redact_secrets
+		return {
+			"ok": False,
+			"status": "error",
+			"message": redact_secrets(str(e)),
+			"data": None
+		}

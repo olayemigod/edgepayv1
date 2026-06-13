@@ -30,6 +30,31 @@ def redact_secrets(data):
 	elif isinstance(data, str):
 		for pattern in SENSITIVE_PATTERNS:
 			data = pattern.sub("[REDACTED]", data)
+		
+		# Dynamically redact saved provider credentials from strings
+		import frappe
+		if frappe.local and hasattr(frappe.local, "db") and frappe.local.db:
+			try:
+				providers = frappe.get_all("EdgePay Provider", fields=["name", "api_key", "secret_key"])
+				for p in providers:
+					# Check basic fields
+					for field in ("api_key", "secret_key"):
+						val = p.get(field)
+						if val and len(val) > 4 and val in data:
+							data = data.replace(val, "[REDACTED]")
+					
+					# Check password fields
+					try:
+						doc = frappe.get_doc("EdgePay Provider", p.name)
+						for field in ("api_key", "secret_key"):
+							pwd_val = doc.get_password(field)
+							if pwd_val and len(pwd_val) > 4 and pwd_val in data:
+								data = data.replace(pwd_val, "[REDACTED]")
+					except Exception:
+						pass
+			except Exception:
+				pass
 		return data
 	else:
 		return data
+

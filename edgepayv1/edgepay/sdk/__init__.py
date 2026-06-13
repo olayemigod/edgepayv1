@@ -2,7 +2,10 @@
 from edgepayv1.edgepay.sdk.payment_requests import (
 	create_source_payment_request,
 	initialize_source_checkout,
-	verify_source_payment
+	verify_source_payment,
+	get_pending_payment_handoffs,
+	mark_payment_handoff_delivered,
+	mark_payment_handoff_failed
 )
 from edgepayv1.edgepay.sdk.status import (
 	get_source_payment_status,

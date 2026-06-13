@@ -18,6 +18,11 @@ def check_and_mark_expired(pr, save=True):
 				pr.status = "Expired"
 				if save:
 					pr.save(ignore_permissions=True)
+					try:
+						from edgepayv1.edgepay.services.connectors import notify_source_payment_status
+						notify_source_payment_status(pr.name, event_source="expiry")
+					except Exception as e:
+						log(f"Failed to dispatch expiry status handoff for {pr.name}: {str(e)}", level="error")
 					if not frappe.flags.in_test:
 						frappe.db.commit()
 				return True

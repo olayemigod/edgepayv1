@@ -100,6 +100,9 @@ def notify_source_payment_status(payment_request_name, transaction_name=None, ev
 		safe_payload = redact_secrets(handoff_payload)
 		
 		connector.handle_payment_status_update(pr, txn, safe_payload)
+
+		from edgepayv1.edgepay.services.handoff import emit_status_handoff
+		emit_status_handoff(pr.name, txn.name if txn else None, event_source=event_source)
 	except Exception as e:
 		from edgepayv1.edgepay.services.logging import log
 		log(f"Failed to notify source payment status for {payment_request_name}: {str(e)}", level="error")
