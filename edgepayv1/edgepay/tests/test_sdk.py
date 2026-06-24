@@ -2,6 +2,7 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from edgepayv1.edgepay.services.clients import set_client_override, clear_client_overrides, SimulatedMonnifyClient
+from edgepayv1.edgepay.tests.utils import DatabaseStateBackup
 from edgepayv1.edgepay.sdk import (
 	create_source_payment_request,
 	initialize_source_checkout,
@@ -17,6 +18,8 @@ import os
 
 class TestEdgePaySDK(FrappeTestCase):
 	def setUp(self):
+		self.db_backup = DatabaseStateBackup()
+		self.db_backup.backup()
 		super(TestEdgePaySDK, self).setUp()
 		clear_client_overrides()
 		
@@ -59,6 +62,7 @@ class TestEdgePaySDK(FrappeTestCase):
 		# Clean up any created Payment Requests during test
 		frappe.db.delete("EdgePay Payment Request", {"provider": self.provider_name})
 		super(TestEdgePaySDK, self).tearDown()
+		self.db_backup.restore()
 
 	def test_sdk_create_source_payment_request(self):
 		context = {

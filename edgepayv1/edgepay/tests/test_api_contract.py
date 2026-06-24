@@ -2,6 +2,7 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from edgepayv1.edgepay.services.clients import set_client_override, clear_client_overrides, SimulatedMonnifyClient, MonnifyClient
+from edgepayv1.edgepay.tests.utils import DatabaseStateBackup
 from edgepayv1.edgepay.services.api import (
 	create_payment_request,
 	initialize_payment_request_checkout,
@@ -16,6 +17,8 @@ from frappe.utils import add_to_date, now_datetime
 
 class TestApiContract(FrappeTestCase):
 	def setUp(self):
+		self.db_backup = DatabaseStateBackup()
+		self.db_backup.backup()
 		super(TestApiContract, self).setUp()
 		clear_client_overrides()
 		
@@ -84,6 +87,7 @@ class TestApiContract(FrappeTestCase):
 			frappe.db.delete("EdgePay Provider", self.provider_name)
 		frappe.db.delete("EdgePay Payment Transaction", {"payment_request": self.payment_request.name})
 		super(TestApiContract, self).tearDown()
+		self.db_backup.restore()
 
 	def test_expired_payment_request_cannot_be_initialized(self):
 		# Set expires_on to past

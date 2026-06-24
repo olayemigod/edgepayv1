@@ -50,6 +50,10 @@ def get_monnify_token(provider_doc):
 			base_url = "https://sandbox.monnify.com/api"
 		else:
 			base_url = "https://api.monnify.com/api"
+	else:
+		base_url = base_url.rstrip('/')
+		if base_url.endswith("monnify.com"):
+			base_url = f"{base_url}/api"
 
 	url = f"{base_url}/v1/auth/login"
 
@@ -68,7 +72,23 @@ def get_monnify_token(provider_doc):
 		response.raise_for_status()
 		resp_json = response.json()
 	except Exception as e:
-		redacted_err = redact_secrets(str(e))
+		error_details = ""
+		if hasattr(e, "response") and e.response is not None:
+			try:
+				error_json = e.response.json()
+				msg = error_json.get("responseMessage")
+				body = error_json.get("responseBody")
+				if msg:
+					error_details = f" - {msg}"
+					if body:
+						error_details += f" ({body})"
+			except Exception:
+				try:
+					if e.response.text:
+						error_details = f" - {e.response.text[:200]}"
+				except Exception:
+					pass
+		redacted_err = redact_secrets(f"{str(e)}{error_details}")
 		frappe.throw(_("Monnify Authentication request failed: {0}").format(redacted_err))
 
 	if not resp_json.get("requestSuccessful"):

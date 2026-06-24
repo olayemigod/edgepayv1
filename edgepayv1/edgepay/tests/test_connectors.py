@@ -2,6 +2,7 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from edgepayv1.edgepay.services.clients import set_client_override, clear_client_overrides, SimulatedMonnifyClient
+from edgepayv1.edgepay.tests.utils import DatabaseStateBackup
 from edgepayv1.edgepay.services.connectors.generic import GenericSourceConnector
 from edgepayv1.edgepay.services.connectors.registry import (
 	get_connector,
@@ -13,6 +14,8 @@ import sys
 
 class TestConnectors(FrappeTestCase):
 	def setUp(self):
+		self.db_backup = DatabaseStateBackup()
+		self.db_backup.backup()
 		super(TestConnectors, self).setUp()
 		clear_client_overrides()
 		
@@ -55,6 +58,7 @@ class TestConnectors(FrappeTestCase):
 		# Clean up any created Payment Requests during test
 		frappe.db.delete("EdgePay Payment Request", {"provider": self.provider_name})
 		super(TestConnectors, self).tearDown()
+		self.db_backup.restore()
 
 	def test_generic_connector_validates_valid_source_context(self):
 		connector = GenericSourceConnector()

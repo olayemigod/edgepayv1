@@ -2,6 +2,7 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from edgepayv1.edgepay.services.clients import set_client_override, clear_client_overrides, SimulatedMonnifyClient
+from edgepayv1.edgepay.tests.utils import DatabaseStateBackup
 from edgepayv1.edgepay.sdk import (
 	create_source_payment_request,
 	initialize_source_checkout,
@@ -16,6 +17,8 @@ import os
 
 class TestHandoffQueue(FrappeTestCase):
 	def setUp(self):
+		self.db_backup = DatabaseStateBackup()
+		self.db_backup.backup()
 		super(TestHandoffQueue, self).setUp()
 		clear_client_overrides()
 		
@@ -49,19 +52,27 @@ class TestHandoffQueue(FrappeTestCase):
 		}).insert()
 
 		frappe.set_user("Administrator")
-		# Clean up any status handoffs
-		frappe.db.delete("EdgePay Status Handoff Event")
+		# Clean up any status handoffs and webhook events for this test provider from prior runs
+		frappe.db.delete("EdgePay Webhook Event", {"event_reference": "TXN-MOCK-WEBHOOK-999"})
+		pr_names = frappe.get_all("EdgePay Payment Request", filters={"provider": self.provider_name}, pluck="name")
+		if pr_names:
+			frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": ["in", pr_names]})
+			frappe.db.delete("EdgePay Webhook Event", {"linked_payment_request": ["in", pr_names]})
 
 	def tearDown(self):
 		clear_client_overrides()
 		frappe.set_user("Administrator")
 		if frappe.db.exists("EdgePay Provider", self.provider_name):
 			frappe.db.delete("EdgePay Provider", self.provider_name)
-		# Clean up
-		frappe.db.delete("EdgePay Payment Request")
-		frappe.db.delete("EdgePay Payment Transaction")
-		frappe.db.delete("EdgePay Status Handoff Event")
+		# Clean up test records only
+		pr_names = frappe.get_all("EdgePay Payment Request", filters={"provider": self.provider_name}, pluck="name")
+		if pr_names:
+			frappe.db.delete("EdgePay Payment Transaction", {"payment_request": ["in", pr_names]})
+			frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": ["in", pr_names]})
+			frappe.db.delete("EdgePay Webhook Event", {"linked_payment_request": ["in", pr_names]})
+			frappe.db.delete("EdgePay Payment Request", {"name": ["in", pr_names]})
 		super(TestHandoffQueue, self).tearDown()
+		self.db_backup.restore()
 
 	def test_handoff_event_created_on_checkout_initialization(self):
 		context = {
@@ -113,7 +124,7 @@ class TestHandoffQueue(FrappeTestCase):
 
 		initialize_source_checkout(pr_name)
 		# Clear the initial checkout handoff to focus on verification
-		frappe.db.delete("EdgePay Status Handoff Event")
+		frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": pr_name})
 
 		# Verify
 		verify_source_payment(pr_name)
@@ -140,7 +151,7 @@ class TestHandoffQueue(FrappeTestCase):
 		pr_name = res["data"]["payment_request"]
 
 		initialize_source_checkout(pr_name)
-		frappe.db.delete("EdgePay Status Handoff Event")
+		frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": pr_name})
 
 		# Force client mock response to return failed transaction
 		self.mock_client.mock_status = "FAILED"
@@ -169,7 +180,7 @@ class TestHandoffQueue(FrappeTestCase):
 		pr = frappe.get_doc("EdgePay Payment Request", pr_name)
 
 		initialize_source_checkout(pr_name)
-		frappe.db.delete("EdgePay Status Handoff Event")
+		frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": pr_name})
 
 		# Simulate signed webhook call
 		body = {
@@ -217,7 +228,7 @@ class TestHandoffQueue(FrappeTestCase):
 		pr_name = res["data"]["payment_request"]
 
 		initialize_source_checkout(pr_name)
-		frappe.db.delete("EdgePay Status Handoff Event")
+		frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": pr_name})
 
 		# First verification
 		verify_source_payment(pr_name)

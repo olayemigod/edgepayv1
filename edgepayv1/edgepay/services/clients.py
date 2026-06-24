@@ -33,7 +33,23 @@ class MonnifyClient(BaseHTTPClient):
 			response.raise_for_status()
 			return response.json()
 		except Exception as e:
-			redacted_msg = redact_secrets(str(e))
+			error_details = ""
+			if hasattr(e, "response") and e.response is not None:
+				try:
+					error_json = e.response.json()
+					msg = error_json.get("responseMessage")
+					body = error_json.get("responseBody")
+					if msg:
+						error_details = f" - {msg}"
+						if body:
+							error_details += f" ({body})"
+				except Exception:
+					try:
+						if e.response.text:
+							error_details = f" - {e.response.text[:200]}"
+					except Exception:
+						pass
+			redacted_msg = redact_secrets(f"{str(e)}{error_details}")
 			frappe.throw(_("Monnify API POST call failed: {0}").format(redacted_msg))
 
 	def get(self, url, headers=None):
@@ -55,7 +71,23 @@ class MonnifyClient(BaseHTTPClient):
 			response.raise_for_status()
 			return response.json()
 		except Exception as e:
-			redacted_msg = redact_secrets(str(e))
+			error_details = ""
+			if hasattr(e, "response") and e.response is not None:
+				try:
+					error_json = e.response.json()
+					msg = error_json.get("responseMessage")
+					body = error_json.get("responseBody")
+					if msg:
+						error_details = f" - {msg}"
+						if body:
+							error_details += f" ({body})"
+				except Exception:
+					try:
+						if e.response.text:
+							error_details = f" - {e.response.text[:200]}"
+					except Exception:
+						pass
+			redacted_msg = redact_secrets(f"{str(e)}{error_details}")
 			frappe.throw(_("Monnify API GET call failed: {0}").format(redacted_msg))
 
 class SimulatedMonnifyClient(BaseHTTPClient):

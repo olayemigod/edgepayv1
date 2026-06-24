@@ -4,12 +4,15 @@ from frappe.tests.utils import FrappeTestCase
 from edgepayv1.edgepay.services.clients import MonnifyClient, SimulatedMonnifyClient, get_client, is_live_call_allowed
 from edgepayv1.edgepay.services.providers.monnify_auth import get_monnify_token
 from edgepayv1.edgepay.services.api import validate_live_provider_readiness
+from edgepayv1.edgepay.tests.utils import DatabaseStateBackup
 from unittest.mock import patch, MagicMock
 import base64
 import json
 
 class TestLiveIntegration(FrappeTestCase):
 	def setUp(self):
+		self.db_backup = DatabaseStateBackup()
+		self.db_backup.backup()
 		super(TestLiveIntegration, self).setUp()
 		
 		# Set up settings
@@ -21,6 +24,7 @@ class TestLiveIntegration(FrappeTestCase):
 		
 		# Set up provider
 		self.provider_name = "Test Monnify Live Integration Provider"
+		frappe.db.delete("EdgePay Provider", {"provider_code": "monnify"})
 		if not frappe.db.exists("EdgePay Provider", self.provider_name):
 			self.provider = frappe.get_doc({
 				"doctype": "EdgePay Provider",
@@ -56,6 +60,7 @@ class TestLiveIntegration(FrappeTestCase):
 		if frappe.db.exists("EdgePay Provider", self.provider_name):
 			frappe.db.delete("EdgePay Provider", self.provider_name)
 		super(TestLiveIntegration, self).tearDown()
+		self.db_backup.restore()
 
 	def test_external_http_calls_disabled_by_default(self):
 		# Default allow_external_http_calls is 0

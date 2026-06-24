@@ -2,6 +2,28 @@
 import frappe
 from frappe import _
 import json
+
+def resolve_payment_request_by_ref(ref):
+	if not ref:
+		return None
+	if frappe.db.exists("EdgePay Payment Request", ref):
+		return ref
+	if "-" in ref:
+		possible_pr = ref.rsplit('-', 1)[0]
+		if frappe.db.exists("EdgePay Payment Request", possible_pr):
+			return possible_pr
+	
+	# Try lookup by request_reference
+	pr_name = frappe.db.get_value("EdgePay Payment Request", {"request_reference": ref}, "name")
+	if pr_name:
+		return pr_name
+		
+	if "-" in ref:
+		possible_req = ref.rsplit('-', 1)[0]
+		pr_name = frappe.db.get_value("EdgePay Payment Request", {"request_reference": possible_req}, "name")
+		if pr_name:
+			return pr_name
+	return None
 from edgepayv1.edgepay.services.providers.registry import get_provider_instance
 
 @frappe.whitelist()
@@ -390,13 +412,18 @@ def handle_checkout_callback(payment_request=None, provider_reference=None, tran
 		from edgepayv1.edgepay.services.verification import verify_transaction
 		from edgepayv1.edgepay.services.security import redact_secrets
 
-		# Resolve payment request name from hints
-		pr_name = payment_request
-		if not pr_name and provider_reference:
-			pr_name = frappe.db.get_value("EdgePay Payment Request", {"provider_reference": provider_reference}, "name")
-		if not pr_name and transaction_reference:
-			# Look up by request_reference or transaction_reference
-			pr_name = frappe.db.get_value("EdgePay Payment Request", {"request_reference": transaction_reference}, "name")
+		# Resolve payment request name from hints (supporting both standard arguments and Monnify/camelCase query parameters)
+		pr_name = payment_request or frappe.form_dict.get("paymentReference")
+		if pr_name:
+			pr_name = resolve_payment_request_by_ref(pr_name)
+
+		provider_ref = provider_reference or frappe.form_dict.get("transactionReference")
+		if not pr_name and provider_ref:
+			pr_name = frappe.db.get_value("EdgePay Payment Request", {"provider_reference": provider_ref}, "name")
+
+		tx_ref = transaction_reference or frappe.form_dict.get("paymentReference")
+		if not pr_name and tx_ref:
+			pr_name = resolve_payment_request_by_ref(tx_ref)
 
 		if not pr_name:
 			frappe.throw(_("Payment request could not be resolved from callback parameters"))

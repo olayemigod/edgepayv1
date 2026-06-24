@@ -91,7 +91,8 @@ def process_webhook_event(provider_code, headers, raw_body):
 	# Resolve Payment Request
 	pr_name = None
 	if payment_ref:
-		pr_name = frappe.db.get_value("EdgePay Payment Request", {"request_reference": payment_ref}, "name")
+		from edgepayv1.edgepay.services.api import resolve_payment_request_by_ref
+		pr_name = resolve_payment_request_by_ref(payment_ref)
 	if not pr_name and provider_ref:
 		pr_name = frappe.db.get_value("EdgePay Payment Request", {"provider_reference": provider_ref}, "name")
 		

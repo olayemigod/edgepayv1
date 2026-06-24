@@ -3,21 +3,26 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from edgepayv1.edgepay.services.webhooks import process_webhook_event, process_provider_webhook
 from edgepayv1.edgepay.services.clients import clear_client_overrides
+from edgepayv1.edgepay.tests.utils import DatabaseStateBackup
 import json
 import hmac
 import hashlib
 
 class TestWebhooks(FrappeTestCase):
 	def setUp(self):
+		self.db_backup = DatabaseStateBackup()
+		self.db_backup.backup()
 		super(TestWebhooks, self).setUp()
 		clear_client_overrides()
 		
 		self.settings = frappe.get_doc("EdgePay Settings")
 		self.settings.sandbox_mode = 1
+		self.settings.allow_external_http_calls = 0
 		self.settings.save()
 		
 		self.provider_name = "Test Monnify Webhook Provider"
 		self.secret_key = "test_webhook_secret_key"
+		frappe.db.delete("EdgePay Provider", {"provider_code": "monnify"})
 		if not frappe.db.exists("EdgePay Provider", self.provider_name):
 			self.provider = frappe.get_doc({
 				"doctype": "EdgePay Provider",
@@ -67,6 +72,7 @@ class TestWebhooks(FrappeTestCase):
 		frappe.db.delete("EdgePay Webhook Event", {"provider": self.provider_name})
 		frappe.db.delete("EdgePay Payment Transaction", {"payment_request": self.payment_request.name})
 		super(TestWebhooks, self).tearDown()
+		self.db_backup.restore()
 
 	def _get_headers_and_body(self, payload):
 		body_str = json.dumps(payload)

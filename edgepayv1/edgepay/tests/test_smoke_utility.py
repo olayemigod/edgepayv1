@@ -3,11 +3,15 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from edgepayv1.edgepay.tools.monnify_sandbox_smoke import run_monnify_sandbox_smoke
 from unittest.mock import patch, MagicMock
+from edgepayv1.edgepay.tests.utils import DatabaseStateBackup
 import os
 
 class TestSmokeUtility(FrappeTestCase):
 	def setUp(self):
+		self.db_backup = DatabaseStateBackup()
+		self.db_backup.backup()
 		super(TestSmokeUtility, self).setUp()
+		frappe.db.delete("EdgePay Provider", {"provider_code": "monnify"})
 		self.settings = frappe.get_doc("EdgePay Settings")
 		self.settings.enable_edgepay = 0
 		self.settings.allow_external_http_calls = 0
@@ -33,6 +37,7 @@ class TestSmokeUtility(FrappeTestCase):
 		settings.save()
 		frappe.db.commit()
 		super(TestSmokeUtility, self).tearDown()
+		self.db_backup.restore()
 
 	def test_refuses_when_env_flag_not_set(self):
 		# Enforce environment flag is not set

@@ -25,14 +25,19 @@ class MonnifyProvider(BaseProvider):
 				base_url = "https://sandbox.monnify.com/api"
 			else:
 				base_url = "https://api.monnify.com/api"
+		else:
+			base_url = base_url.rstrip('/')
+			if base_url.endswith("monnify.com"):
+				base_url = f"{base_url}/api"
 		return base_url
 
 	def build_checkout_payload(self, payment_request):
+		unique_ref = f"{payment_request.name}-{frappe.generate_hash(length=8)}"
 		return {
 			"amount": payment_request.amount,
 			"customerName": payment_request.customer_name,
 			"customerEmail": payment_request.customer_email,
-			"paymentReference": payment_request.request_reference,
+			"paymentReference": unique_ref,
 			"paymentDescription": payment_request.payment_purpose or "Payment",
 			"currencyCode": payment_request.currency,
 			"contractCode": getattr(self.provider_doc, "contract_code", None) or "", 

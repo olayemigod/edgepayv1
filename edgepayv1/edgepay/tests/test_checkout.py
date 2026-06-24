@@ -2,12 +2,15 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from edgepayv1.edgepay.services.clients import set_client_override, clear_client_overrides, SimulatedMonnifyClient, MonnifyClient
+from edgepayv1.edgepay.tests.utils import DatabaseStateBackup
 from edgepayv1.edgepay.services.checkout import initialize_checkout, initialize_payment_request_checkout
 from edgepayv1.edgepay.services.providers.registry import get_provider_instance
 import json
 
 class TestCheckout(FrappeTestCase):
 	def setUp(self):
+		self.db_backup = DatabaseStateBackup()
+		self.db_backup.backup()
 		super(TestCheckout, self).setUp()
 		clear_client_overrides()
 		
@@ -17,10 +20,12 @@ class TestCheckout(FrappeTestCase):
 		# Set up settings sandbox_mode
 		self.settings = frappe.get_doc("EdgePay Settings")
 		self.settings.sandbox_mode = 1
+		self.settings.allow_external_http_calls = 0
 		self.settings.save()
 		
 		# Set up mock provider
 		self.provider_name = "Test Monnify Checkout Provider"
+		frappe.db.delete("EdgePay Provider", {"provider_code": "monnify"})
 		if not frappe.db.exists("EdgePay Provider", self.provider_name):
 			self.provider = frappe.get_doc({
 				"doctype": "EdgePay Provider",
@@ -64,6 +69,7 @@ class TestCheckout(FrappeTestCase):
 		if frappe.db.exists("EdgePay Provider", self.provider_name):
 			frappe.db.delete("EdgePay Provider", self.provider_name)
 		super(TestCheckout, self).tearDown()
+		self.db_backup.restore()
 
 	def test_successful_checkout_initialization(self):
 		res = initialize_checkout(self.payment_request.name)
@@ -72,7 +78,8 @@ class TestCheckout(FrappeTestCase):
 		self.assertEqual(doc.status, "Initiated")
 		self.assertEqual(res["status"], "Initiated")
 		self.assertTrue(doc.checkout_url.startswith("https://sandbox.monnify.com/checkout/"))
-		self.assertEqual(doc.provider_reference, f"MON-{self.req_ref}-TX")
+		self.assertTrue(doc.provider_reference.startswith(f"MON-{doc.name}-"))
+		self.assertTrue(doc.provider_reference.endswith("-TX"))
 		
 		self.assertEqual(res["checkout_url"], doc.checkout_url)
 		self.assertEqual(res["provider_reference"], doc.provider_reference)

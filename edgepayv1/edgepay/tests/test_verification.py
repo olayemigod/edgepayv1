@@ -2,12 +2,15 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from edgepayv1.edgepay.services.clients import set_client_override, clear_client_overrides, SimulatedMonnifyClient, MonnifyClient
+from edgepayv1.edgepay.tests.utils import DatabaseStateBackup
 from edgepayv1.edgepay.services.verification import verify_transaction, verify_payment_request_transaction
 from edgepayv1.edgepay.services.providers.registry import get_provider_instance
 import json
 
 class TestVerification(FrappeTestCase):
 	def setUp(self):
+		self.db_backup = DatabaseStateBackup()
+		self.db_backup.backup()
 		super(TestVerification, self).setUp()
 		clear_client_overrides()
 		
@@ -16,9 +19,11 @@ class TestVerification(FrappeTestCase):
 		
 		self.settings = frappe.get_doc("EdgePay Settings")
 		self.settings.sandbox_mode = 1
+		self.settings.allow_external_http_calls = 0
 		self.settings.save()
 		
 		self.provider_name = "Test Monnify Verification Provider"
+		frappe.db.delete("EdgePay Provider", {"provider_code": "monnify"})
 		if not frappe.db.exists("EdgePay Provider", self.provider_name):
 			self.provider = frappe.get_doc({
 				"doctype": "EdgePay Provider",
@@ -65,6 +70,7 @@ class TestVerification(FrappeTestCase):
 			frappe.db.delete("EdgePay Provider", self.provider_name)
 		frappe.db.delete("EdgePay Payment Transaction", {"payment_request": self.payment_request.name})
 		super(TestVerification, self).tearDown()
+		self.db_backup.restore()
 
 	def test_successful_verification(self):
 		self.mock_client.mock_status = "PAID"

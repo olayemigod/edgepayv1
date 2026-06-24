@@ -3,10 +3,15 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from edgepayv1.edgepay.services.providers.registry import get_provider_instance
 from edgepayv1.edgepay.services.security import redact_secrets
+from edgepayv1.edgepay.tests.utils import DatabaseStateBackup
 
 class TestProviderFoundation(FrappeTestCase):
 	def setUp(self):
+		self.db_backup = DatabaseStateBackup()
+		self.db_backup.backup()
+		super(TestProviderFoundation, self).setUp()
 		# Create test provider if it doesn't exist
+		frappe.db.delete("EdgePay Provider", {"provider_code": "monnify"})
 		if not frappe.db.exists("EdgePay Provider", "Test Monnify"):
 			self.provider = frappe.get_doc({
 				"doctype": "EdgePay Provider",
@@ -29,6 +34,12 @@ class TestProviderFoundation(FrappeTestCase):
 			self.provider.api_key = "test_api_key"
 			self.provider.secret_key = "test_secret_key"
 			self.provider.save()
+
+	def tearDown(self):
+		if frappe.db.exists("EdgePay Provider", "Test Monnify"):
+			frappe.db.delete("EdgePay Provider", "Test Monnify")
+		super(TestProviderFoundation, self).tearDown()
+		self.db_backup.restore()
 
 	def test_registry_loads_monnify(self):
 		instance = get_provider_instance("Test Monnify")
