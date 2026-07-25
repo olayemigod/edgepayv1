@@ -43,6 +43,7 @@ jobs:
         with:
           repository: olayemigod/processedge-edge-suite-ui
           ref: agent/edgeui-product-app-switcher
+          token: ${{ secrets.EDGESUITE_UI_TOKEN }}
           path: edgesuite-ui-source
 
       - name: Find tests
