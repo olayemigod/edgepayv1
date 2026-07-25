@@ -64,7 +64,8 @@
 				items: [
 					{
 						label: "Payment Summary",
-						description: "View successful, pending, failed and expired request totals.",
+						description:
+							"View successful, pending, failed and expired request totals.",
 						icon: "chart",
 						route: "/app/edgepay-home#payment-summary",
 					},
