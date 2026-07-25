@@ -21,10 +21,7 @@ REQUEST_STATUSES = ("Draft", "Initiated", "Paid", "Failed", "Expired", "Cancelle
 
 
 def _can_read(doctype: str) -> bool:
-	return bool(
-		frappe.db.exists("DocType", doctype)
-		and frappe.has_permission(doctype, "read")
-	)
+	return bool(frappe.db.exists("DocType", doctype) and frappe.has_permission(doctype, "read"))
 
 
 def _settings_summary() -> dict:
