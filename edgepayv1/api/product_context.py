@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from edgepayv1.api.permission import has_app_permission
 
-
 PRODUCT_DESCRIPTOR = {
 	"key": "edgepay",
 	"product_key": "edgepay",
