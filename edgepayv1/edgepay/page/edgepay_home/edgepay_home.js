@@ -46,7 +46,7 @@ frappe.pages["edgepay-home"].on_page_show = function (wrapper) {
 							<div class="h3 mb-0">${escape(counts[status] || 0)}</div>
 						</div>
 					</div>
-				</div>`,
+				</div>`
 			)
 			.join("");
 		const checks = (registration.checks || [])
@@ -57,7 +57,7 @@ frappe.pages["edgepay-home"].on_page_show = function (wrapper) {
 					<span class="${check.complete ? "indicator-pill green" : "indicator-pill gray"}">
 						${escape(check.complete ? __("Complete") : __("Pending"))}
 					</span>
-				</li>`,
+				</li>`
 			)
 			.join("");
 		const rows = recent.length
@@ -65,25 +65,35 @@ frappe.pages["edgepay-home"].on_page_show = function (wrapper) {
 					.map(
 						(row) => `
 						<tr>
-							<td><a href="/app/edgepay-payment-request/${encodeURIComponent(row.name)}">${escape(row.request_reference || row.name)}</a></td>
+							<td><a href="/app/edgepay-payment-request/${encodeURIComponent(row.name)}">${escape(
+							row.request_reference || row.name
+						)}</a></td>
 							<td>${escape(row.customer_name)}</td>
 							<td>${escape(row.currency)} ${escape(row.amount)}</td>
 							<td><span class="${statusClass(row.status)}">${escape(row.status)}</span></td>
 							<td>${escape(row.source_app || row.source_doctype || "")}</td>
-						</tr>`,
+						</tr>`
 					)
 					.join("")
-			: `<tr><td colspan="5" class="text-center text-muted p-4">${escape(__("No payment requests are available."))}</td></tr>`;
+			: `<tr><td colspan="5" class="text-center text-muted p-4">${escape(
+					__("No payment requests are available.")
+			  )}</td></tr>`;
 
 		root.innerHTML = `
 			<div class="mb-4">
 				<h2 class="mb-1">${escape(__("Payment operations and readiness"))}</h2>
-				<p class="text-muted mb-0">${escape(__("Review verified payment activity, setup readiness and recent requests without exposing provider credentials."))}</p>
+				<p class="text-muted mb-0">${escape(
+					__(
+						"Review verified payment activity, setup readiness and recent requests without exposing provider credentials."
+					)
+				)}</p>
 			</div>
 			<section id="payment-summary" class="mb-4">
 				<div class="d-flex justify-content-between align-items-center mb-2">
 					<h4 class="mb-0">${escape(__("Payment summary"))}</h4>
-					<a class="btn btn-default btn-sm" href="/app/edgepay-payment-request">${escape(__("Open Payment Requests"))}</a>
+					<a class="btn btn-default btn-sm" href="/app/edgepay-payment-request">${escape(
+						__("Open Payment Requests")
+					)}</a>
 				</div>
 				<div class="row">${countCards}</div>
 			</section>
@@ -94,20 +104,43 @@ frappe.pages["edgepay-home"].on_page_show = function (wrapper) {
 							<h4 class="mb-1">${escape(__("Registration and activation readiness"))}</h4>
 							<p class="text-muted mb-0">${escape(registration.message || "")}</p>
 						</div>
-						<span class="${statusClass(registration.status)}">${escape(registration.status || __("Unknown"))}</span>
+						<span class="${statusClass(registration.status)}">${escape(
+			registration.status || __("Unknown")
+		)}</span>
 					</div>
-					<ul class="list-group list-group-flush">${checks || `<li class="list-group-item text-muted">${escape(__("No readiness checks are visible for your role."))}</li>`}</ul>
+					<ul class="list-group list-group-flush">${
+						checks ||
+						`<li class="list-group-item text-muted">${escape(
+							__("No readiness checks are visible for your role.")
+						)}</li>`
+					}</ul>
 				</div>
 			</section>
 			<section id="tenant-settings" class="card mb-4">
 				<div class="card-body">
 					<h4>${escape(__("Tenant payment information"))}</h4>
 					<div class="row">
-						<div class="col-md-4"><div class="text-muted small">${escape(__("Default currency"))}</div><strong>${escape(settings.default_currency || __("Not set"))}</strong></div>
-						<div class="col-md-4"><div class="text-muted small">${escape(__("Default provider"))}</div><strong>${escape(settings.default_provider || __("Not set"))}</strong></div>
-						<div class="col-md-4"><div class="text-muted small">${escape(__("Environment"))}</div><strong>${escape(settings.sandbox_mode ? __("Sandbox") : __("Configured mode"))}</strong></div>
+						<div class="col-md-4"><div class="text-muted small">${escape(
+							__("Default currency")
+						)}</div><strong>${escape(
+			settings.default_currency || __("Not set")
+		)}</strong></div>
+						<div class="col-md-4"><div class="text-muted small">${escape(
+							__("Default provider")
+						)}</div><strong>${escape(
+			settings.default_provider || __("Not set")
+		)}</strong></div>
+						<div class="col-md-4"><div class="text-muted small">${escape(
+							__("Environment")
+						)}</div><strong>${escape(
+			settings.sandbox_mode ? __("Sandbox") : __("Configured mode")
+		)}</strong></div>
 					</div>
-					<p class="text-muted small mt-3 mb-0">${escape(__("Provider credentials, live-call gates and webhook secrets are intentionally not displayed here."))}</p>
+					<p class="text-muted small mt-3 mb-0">${escape(
+						__(
+							"Provider credentials, live-call gates and webhook secrets are intentionally not displayed here."
+						)
+					)}</p>
 				</div>
 			</section>
 			<section class="card">
@@ -115,7 +148,9 @@ frappe.pages["edgepay-home"].on_page_show = function (wrapper) {
 					<h4>${escape(__("Recent payment requests"))}</h4>
 					<div class="table-responsive">
 						<table class="table table-hover">
-							<thead><tr><th>${escape(__("Reference"))}</th><th>${escape(__("Customer"))}</th><th>${escape(__("Amount"))}</th><th>${escape(__("Status"))}</th><th>${escape(__("Source"))}</th></tr></thead>
+							<thead><tr><th>${escape(__("Reference"))}</th><th>${escape(__("Customer"))}</th><th>${escape(
+			__("Amount")
+		)}</th><th>${escape(__("Status"))}</th><th>${escape(__("Source"))}</th></tr></thead>
 							<tbody>${rows}</tbody>
 						</table>
 					</div>
@@ -123,7 +158,9 @@ frappe.pages["edgepay-home"].on_page_show = function (wrapper) {
 			</section>`;
 	};
 
-	root.innerHTML = `<div class="text-center text-muted p-5">${escape(__("Loading EdgePay information…"))}</div>`;
+	root.innerHTML = `<div class="text-center text-muted p-5">${escape(
+		__("Loading EdgePay information…")
+	)}</div>`;
 	frappe.require("edgesuite_ui.bundle.js", () => {
 		const runtime = window.EdgeSuiteUI || window.EdgeUI;
 		if (!runtime) {
