@@ -39,9 +39,7 @@ class TestEdgePayProductSurface(unittest.TestCase):
 
 	def test_home_surface_does_not_expose_platform_secrets(self):
 		home_api = (APP_ROOT / "api/home.py").read_text()
-		home_page = (
-			APP_ROOT / "edgepay/page/edgepay_home/edgepay_home.js"
-		).read_text()
+		home_page = (APP_ROOT / "edgepay/page/edgepay_home/edgepay_home.js").read_text()
 		combined = f"{home_api}\n{home_page}".lower()
 		for forbidden in (
 			"api_key",
