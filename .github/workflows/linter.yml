@@ -23,7 +23,22 @@ jobs:
         with:
           python-version: '3.14'
           cache: pip
-      - uses: pre-commit/action@v3.0.0
+      - name: Run pre-commit
+        id: precommit
+        continue-on-error: true
+        uses: pre-commit/action@v3.0.0
+
+      - name: Capture pre-commit formatting diff
+        if: steps.precommit.outcome == 'failure'
+        run: git diff --binary > precommit-formatting.patch
+
+      - name: Upload pre-commit formatting diagnostics
+        if: steps.precommit.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: precommit-formatting-diagnostics
+          path: precommit-formatting.patch
+          if-no-files-found: error
 
       - name: Download Semgrep rules
         run: git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
@@ -32,6 +47,10 @@ jobs:
         run: |
           pip install semgrep
           semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness
+
+      - name: Enforce pre-commit result
+        if: steps.precommit.outcome == 'failure'
+        run: exit 1
 
   deps-vulnerable-check:
     name: 'Vulnerable Dependency Check'
