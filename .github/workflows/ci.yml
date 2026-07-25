@@ -38,6 +38,13 @@ jobs:
       - name: Clone
         uses: actions/checkout@v6
 
+      - name: Check out EdgeSuite UI Product App Switcher
+        uses: actions/checkout@v5
+        with:
+          repository: olayemigod/processedge-edge-suite-ui
+          ref: agent/edgeui-product-app-switcher
+          path: edgesuite-ui-source
+
       - name: Find tests
         run: |
           echo "Finding tests"
@@ -88,11 +95,14 @@ jobs:
       - name: Install
         working-directory: /home/runner/frappe-bench
         run: |
-          bench get-app edgepayv1 $GITHUB_WORKSPACE
+          bench get-app --skip-assets "file://$GITHUB_WORKSPACE/edgesuite-ui-source"
+          bench get-app --skip-assets "file://$GITHUB_WORKSPACE"
           bench setup requirements --dev
           bench new-site --db-root-password root --admin-password admin test_site
+          bench --site test_site install-app edgesuite_ui
           bench --site test_site install-app edgepayv1
-          bench build
+          bench build --app edgesuite_ui
+          bench build --app edgepayv1
         env:
           CI: 'Yes'
 
