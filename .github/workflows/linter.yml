@@ -52,12 +52,23 @@ jobs:
         run: git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
 
       - name: Run Semgrep rules
+        id: semgrep
+        continue-on-error: true
         run: |
           pip install semgrep
-          semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness
+          set -o pipefail
+          semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness 2>&1 | tee semgrep-diagnostics.log
 
-      - name: Enforce pre-commit result
-        if: steps.precommit.outcome == 'failure'
+      - name: Upload Semgrep diagnostics
+        if: steps.semgrep.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-diagnostics
+          path: semgrep-diagnostics.log
+          if-no-files-found: error
+
+      - name: Enforce linter results
+        if: steps.precommit.outcome == 'failure' || steps.semgrep.outcome == 'failure'
         run: exit 1
 
   deps-vulnerable-check:
