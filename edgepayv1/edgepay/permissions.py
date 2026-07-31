@@ -9,6 +9,9 @@ MERCHANT_SCOPED_DOCTYPES = {
 	"EdgePay Merchant Branch": "merchant",
 	"EdgePay Provider Account": "merchant",
 	"EdgePay Merchant Verification": "merchant",
+	"EdgePay Verification Consent": "merchant",
+	"EdgePay Identity Verification Session": "merchant",
+	"EdgePay Identity Verification Check": "merchant",
 	"EdgePay Payment Request": "merchant",
 	"EdgePay Payment Transaction": "merchant",
 	"EdgePay Webhook Event": "merchant",
@@ -22,11 +25,7 @@ def get_user_merchants(user=None):
 		return []
 	if PLATFORM_ROLES.intersection(frappe.get_roles(user)):
 		return None
-	return frappe.get_all(
-		"EdgePay Merchant User",
-		filters={"user": user, "active": 1},
-		pluck="merchant",
-	)
+	return frappe.get_all("EdgePay Merchant User", filters={"user": user, "active": 1}, pluck="merchant")
 
 
 def merchant_permission_query(doctype, user=None):
@@ -49,37 +48,18 @@ def has_merchant_permission(doc, user=None, permission_type=None):
 	return bool(merchant and merchant in merchants)
 
 
-def payment_request_query(user=None):
-	return merchant_permission_query("EdgePay Payment Request", user)
+def merchant_record_query(user=None, doctype=None):
+	if not doctype:
+		return "1=0"
+	return merchant_permission_query(doctype, user)
 
 
-def payment_transaction_query(user=None):
-	return merchant_permission_query("EdgePay Payment Transaction", user)
-
-
-def merchant_query(user=None):
-	return merchant_permission_query("EdgePay Merchant", user)
-
-
-def merchant_account_query(user=None):
-	return merchant_permission_query("EdgePay Merchant Account", user)
-
-
-def merchant_branch_query(user=None):
-	return merchant_permission_query("EdgePay Merchant Branch", user)
-
-
-def provider_account_query(user=None):
-	return merchant_permission_query("EdgePay Provider Account", user)
-
-
-def merchant_verification_query(user=None):
-	return merchant_permission_query("EdgePay Merchant Verification", user)
-
-
-def webhook_event_query(user=None):
-	return merchant_permission_query("EdgePay Webhook Event", user)
-
-
-def handoff_event_query(user=None):
-	return merchant_permission_query("EdgePay Status Handoff Event", user)
+def payment_request_query(user=None): return merchant_permission_query("EdgePay Payment Request", user)
+def payment_transaction_query(user=None): return merchant_permission_query("EdgePay Payment Transaction", user)
+def merchant_query(user=None): return merchant_permission_query("EdgePay Merchant", user)
+def merchant_account_query(user=None): return merchant_permission_query("EdgePay Merchant Account", user)
+def merchant_branch_query(user=None): return merchant_permission_query("EdgePay Merchant Branch", user)
+def provider_account_query(user=None): return merchant_permission_query("EdgePay Provider Account", user)
+def merchant_verification_query(user=None): return merchant_permission_query("EdgePay Merchant Verification", user)
+def webhook_event_query(user=None): return merchant_permission_query("EdgePay Webhook Event", user)
+def handoff_event_query(user=None): return merchant_permission_query("EdgePay Status Handoff Event", user)
