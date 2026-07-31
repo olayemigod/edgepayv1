@@ -22,6 +22,8 @@ permission_query_conditions = {
 	"EdgePay Payment Attempt": "edgepayv1.permissions.payment_attempt_query",
 	"EdgePay Payment Transaction": "edgepayv1.permissions.payment_transaction_query",
 	"EdgePay Payment Event": "edgepayv1.permissions.payment_event_query",
+	"EdgePay External Reference": "edgepayv1.permissions.external_reference_query",
+	"EdgePay Refund Request": "edgepayv1.permissions.refund_request_query",
 	"EdgePay Webhook Event": "edgepayv1.permissions.webhook_event_query",
 	"EdgePay Status Handoff Event": "edgepayv1.permissions.handoff_event_query",
 }
@@ -39,6 +41,8 @@ has_permission = {
 	"EdgePay Payment Attempt": "edgepayv1.permissions.has_merchant_permission",
 	"EdgePay Payment Transaction": "edgepayv1.permissions.has_merchant_permission",
 	"EdgePay Payment Event": "edgepayv1.permissions.has_merchant_permission",
+	"EdgePay External Reference": "edgepayv1.permissions.has_merchant_permission",
+	"EdgePay Refund Request": "edgepayv1.permissions.has_merchant_permission",
 	"EdgePay Webhook Event": "edgepayv1.permissions.has_merchant_permission",
 	"EdgePay Status Handoff Event": "edgepayv1.permissions.has_merchant_permission",
 }
