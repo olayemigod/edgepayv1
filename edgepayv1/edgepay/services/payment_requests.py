@@ -10,8 +10,6 @@ from frappe.utils import flt
 from edgepayv1.edgepay.services.authorization import require_merchant_access
 from edgepayv1.edgepay.services.security import redact_secrets
 
-LEGACY_MERCHANT = "ProcessEdge Legacy Merchant"
-
 
 def resolve_provider_account(provider, merchant=None, provider_account=None):
 	if provider_account:
@@ -22,13 +20,15 @@ def resolve_provider_account(provider, merchant=None, provider_account=None):
 			frappe.throw(_("Provider Account does not match the selected Provider"))
 		return account
 
-	filters = {"provider": provider, "enabled": 1}
+	filters = {"provider": provider, "enabled": 1, "status": "Active"}
 	if merchant:
 		filters["merchant"] = merchant
-	name = frappe.db.get_value("EdgePay Provider Account", filters, "name", order_by="modified desc")
-	if not name:
+	accounts = frappe.get_all("EdgePay Provider Account", filters=filters, pluck="name", limit_page_length=2)
+	if not accounts:
 		frappe.throw(_("No enabled Provider Account is available for the selected Merchant and Provider"))
-	return frappe.get_doc("EdgePay Provider Account", name)
+	if not merchant and len(accounts) > 1:
+		frappe.throw(_("Merchant or Provider Account is required because multiple provider accounts are available"))
+	return frappe.get_doc("EdgePay Provider Account", accounts[0])
 
 
 def create_payment_request_record(
