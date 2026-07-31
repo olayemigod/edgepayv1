@@ -8,8 +8,10 @@ from frappe.utils import flt
 
 from edgepayv1.edgepay.services.attempt_resolution import resolve_or_create_legacy_attempt
 from edgepayv1.edgepay.services.clients import get_client
+from edgepayv1.edgepay.services.external_references import register_reference
 from edgepayv1.edgepay.services.logging import log
-from edgepayv1.edgepay.services.payment_state import transition_attempt, transition_request
+from edgepayv1.edgepay.services.payment_state import transition_attempt
+from edgepayv1.edgepay.services.payment_totals import sync_payment_totals
 from edgepayv1.edgepay.services.providers.registry import get_provider_instance
 from edgepayv1.edgepay.services.security import redact_secrets
 
@@ -30,16 +32,14 @@ def verify_transaction(payment_request_name):
 	url = f"{provider_instance.get_base_url()}/v1/merchant/transactions/query?{urlparse.urlencode(payload)}"
 	response = client.get(url)
 	parsed = provider_instance.parse_verification_response(response)
-	if parsed.get("amount") is not None and flt(parsed.get("amount")) != flt(pr.amount):
-		frappe.throw(_("Verification failed: Amount mismatch"))
+	if parsed.get("amount") is not None and flt(parsed.get("amount")) > flt(pr.amount):
+		frappe.throw(_("Verification failed: Amount exceeds Payment Request amount"))
 	if parsed.get("currency") and parsed.get("currency").upper() != pr.currency.upper():
 		frappe.throw(_("Verification failed: Currency mismatch"))
 
 	txn_ref = parsed.get("transaction_reference") or parsed.get("provider_reference")
 	prov_ref = parsed.get("provider_reference")
-	txn_name = None
-	if txn_ref:
-		txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"transaction_reference": txn_ref}, "name")
+	txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"transaction_reference": txn_ref}, "name") if txn_ref else None
 	if not txn_name and prov_ref:
 		txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"provider_reference": prov_ref}, "name")
 	txn = frappe.get_doc("EdgePay Payment Transaction", txn_name) if txn_name else frappe.new_doc("EdgePay Payment Transaction")
@@ -48,7 +48,7 @@ def verify_transaction(payment_request_name):
 	txn.provider = pr.provider
 	txn.transaction_reference = txn_ref
 	txn.provider_reference = prov_ref
-	txn.amount = pr.amount
+	txn.amount = flt(parsed.get("amount") or pr.amount)
 	txn.currency = pr.currency
 	txn.status = parsed.get("status")
 	txn.paid_on = parsed.get("paid_on")
@@ -60,20 +60,23 @@ def verify_transaction(payment_request_name):
 	attempt.provider_transaction_reference = txn_ref
 	attempt.provider_payment_reference = prov_ref or attempt.provider_payment_reference
 	attempt.save(ignore_permissions=True)
-	if txn.status == "Success":
-		transition_attempt(attempt, "Successful", "Verification Successful", "verification", txn)
-		transition_request(pr, "Paid", "Payment Paid", "verification", attempt, txn)
-	elif txn.status == "Failed":
-		transition_attempt(attempt, "Failed", "Verification Failed", "verification", txn)
-		transition_request(pr, "Failed", "Payment Failed", "verification", attempt, txn)
-	else:
-		if attempt.status == "Initiated":
-			transition_attempt(attempt, "Pending", "Verification Pending", "verification", txn)
+	if prov_ref:
+		register_reference("Provider Payment", prov_ref, pr.name, payment_attempt=attempt.name, payment_transaction=txn.name)
+	if txn_ref:
+		register_reference("Provider Transaction", txn_ref, pr.name, payment_attempt=attempt.name, payment_transaction=txn.name)
 
+	if txn.status == "Success" and attempt.status != "Successful":
+		transition_attempt(attempt, "Successful", "Verification Successful", "verification", txn)
+	elif txn.status == "Failed" and attempt.status not in {"Successful", "Failed"}:
+		transition_attempt(attempt, "Failed", "Verification Failed", "verification", txn)
+	elif txn.status == "Pending" and attempt.status == "Initiated":
+		transition_attempt(attempt, "Pending", "Verification Pending", "verification", txn)
+
+	totals = sync_payment_totals(pr.name)
 	from edgepayv1.edgepay.services.connectors import notify_source_payment_status
 	notify_source_payment_status(pr.name, txn.name, event_source="verification")
 	pr.reload()
-	return {"payment_request": pr.name, "payment_attempt": attempt.name, "request_status": pr.status, "transaction": txn.name, "transaction_status": txn.status, "provider_reference": prov_ref, "amount": txn.amount, "currency": txn.currency, "paid_on": txn.paid_on}
+	return {"payment_request": pr.name, "payment_attempt": attempt.name, "request_status": pr.status, "transaction": txn.name, "transaction_status": txn.status, "provider_reference": prov_ref, "amount": txn.amount, "currency": txn.currency, "paid_on": txn.paid_on, "totals": totals}
 
 
 @frappe.whitelist()
