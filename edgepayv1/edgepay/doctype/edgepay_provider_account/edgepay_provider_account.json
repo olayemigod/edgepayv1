@@ -5,7 +5,7 @@
  "autoname":"format:{merchant}-{provider}-{environment}-{account_label}",
  "track_changes":1,
  "engine":"InnoDB",
- "field_order":["merchant","provider","account_label","environment","enabled","status","credentials_section","api_key","secret_key","contract_code","webhook_token","settlement_section","settlement_account_reference"],
+ "field_order":["merchant","provider","account_label","environment","enabled","status","credentials_section","api_key","secret_key","contract_code","webhook_token","adapter_section","financial_adapter","settlement_section","settlement_account_reference"],
  "fields":[
   {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
   {"fieldname":"provider","fieldtype":"Link","label":"Provider Definition","options":"EdgePay Provider","reqd":1},
@@ -18,6 +18,8 @@
   {"fieldname":"secret_key","fieldtype":"Password","label":"Secret Key"},
   {"fieldname":"contract_code","fieldtype":"Data","label":"Contract Code"},
   {"fieldname":"webhook_token","fieldtype":"Password","label":"Webhook Endpoint Token"},
+  {"fieldname":"adapter_section","fieldtype":"Section Break","label":"Financial Operations"},
+  {"fieldname":"financial_adapter","fieldtype":"Data","label":"Financial Adapter Python Path","description":"Optional live adapter implementing refund and settlement contracts."},
   {"fieldname":"settlement_section","fieldtype":"Section Break","label":"Settlement"},
   {"fieldname":"settlement_account_reference","fieldtype":"Data","label":"Settlement Account Reference"}
  ],
