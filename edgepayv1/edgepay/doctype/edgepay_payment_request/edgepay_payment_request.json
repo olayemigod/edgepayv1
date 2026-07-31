@@ -1,6 +1,6 @@
 {
  "doctype":"DocType","name":"EdgePay Payment Request","module":"EdgePay","autoname":"naming_series:","naming_rule":"By \"Naming Series\" field","track_changes":1,"engine":"InnoDB",
- "field_order":["naming_series","request_reference","merchant","merchant_account","merchant_branch","provider_account","provider","status","idempotency_key","source_section","source_app","source_doctype","source_name","external_tenant_reference","external_company_reference","external_branch_reference","payment_details_section","amount","currency","payment_purpose","customer_details_section","customer_name","customer_email","customer_phone","provider_section","provider_reference","checkout_url","expires_on","metadata_section","metadata_json"],
+ "field_order":["naming_series","request_reference","merchant","merchant_account","merchant_branch","provider_account","provider","status","idempotency_key","source_section","source_app","source_doctype","source_name","external_tenant_reference","external_company_reference","external_branch_reference","payment_details_section","amount","paid_amount","outstanding_amount","refunded_amount","currency","payment_purpose","customer_details_section","customer_name","customer_email","customer_phone","provider_section","provider_reference","checkout_url","expires_on","metadata_section","metadata_json"],
  "fields":[
   {"fieldname":"naming_series","fieldtype":"Select","label":"Naming Series","options":"EP-PRQ-.YYYY.-","default":"EP-PRQ-.YYYY.-","reqd":1},
   {"fieldname":"request_reference","fieldtype":"Data","label":"Request Reference","reqd":1,"unique":1,"search_index":1},
@@ -9,7 +9,7 @@
   {"fieldname":"merchant_branch","fieldtype":"Link","label":"Merchant Branch","options":"EdgePay Merchant Branch"},
   {"fieldname":"provider_account","fieldtype":"Link","label":"Provider Account","options":"EdgePay Provider Account","reqd":1},
   {"fieldname":"provider","fieldtype":"Link","label":"Provider Definition","options":"EdgePay Provider","reqd":1,"read_only":1},
-  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nInitiated\nPaid\nFailed\nExpired\nCancelled","default":"Draft","reqd":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nInitiated\nPartly Paid\nPaid\nOverpaid\nFailed\nExpired\nCancelled\nRefund Pending\nPartly Refunded\nRefunded\nDisputed\nChargeback","default":"Draft","reqd":1},
   {"fieldname":"idempotency_key","fieldtype":"Data","label":"Idempotency Key","search_index":1},
   {"fieldname":"source_section","fieldtype":"Section Break","label":"Source Details"},
   {"fieldname":"source_app","fieldtype":"Data","label":"Source App"},
@@ -20,6 +20,9 @@
   {"fieldname":"external_branch_reference","fieldtype":"Data","label":"External Branch Reference"},
   {"fieldname":"payment_details_section","fieldtype":"Section Break","label":"Payment Details"},
   {"fieldname":"amount","fieldtype":"Currency","label":"Amount","reqd":1,"options":"currency"},
+  {"fieldname":"paid_amount","fieldtype":"Currency","label":"Net Paid Amount","options":"currency","read_only":1,"default":"0"},
+  {"fieldname":"outstanding_amount","fieldtype":"Currency","label":"Outstanding Amount","options":"currency","read_only":1,"default":"0"},
+  {"fieldname":"refunded_amount","fieldtype":"Currency","label":"Refunded Amount","options":"currency","read_only":1,"default":"0"},
   {"fieldname":"currency","fieldtype":"Link","label":"Currency","options":"Currency","reqd":1},
   {"fieldname":"payment_purpose","fieldtype":"Small Text","label":"Payment Purpose"},
   {"fieldname":"customer_details_section","fieldtype":"Section Break","label":"Customer Details"},
