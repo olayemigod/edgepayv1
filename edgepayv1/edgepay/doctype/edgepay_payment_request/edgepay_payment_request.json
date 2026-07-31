@@ -1,10 +1,12 @@
 {
  "doctype":"DocType","name":"EdgePay Payment Request","module":"EdgePay","autoname":"naming_series:","naming_rule":"By \"Naming Series\" field","track_changes":1,"engine":"InnoDB",
- "field_order":["naming_series","request_reference","merchant","provider_account","provider","status","idempotency_key","source_section","source_app","source_doctype","source_name","external_tenant_reference","external_company_reference","external_branch_reference","payment_details_section","amount","currency","payment_purpose","customer_details_section","customer_name","customer_email","customer_phone","provider_section","provider_reference","checkout_url","expires_on","metadata_section","metadata_json"],
+ "field_order":["naming_series","request_reference","merchant","merchant_account","merchant_branch","provider_account","provider","status","idempotency_key","source_section","source_app","source_doctype","source_name","external_tenant_reference","external_company_reference","external_branch_reference","payment_details_section","amount","currency","payment_purpose","customer_details_section","customer_name","customer_email","customer_phone","provider_section","provider_reference","checkout_url","expires_on","metadata_section","metadata_json"],
  "fields":[
   {"fieldname":"naming_series","fieldtype":"Select","label":"Naming Series","options":"EP-PRQ-.YYYY.-","default":"EP-PRQ-.YYYY.-","reqd":1},
   {"fieldname":"request_reference","fieldtype":"Data","label":"Request Reference","reqd":1,"unique":1,"search_index":1},
   {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"merchant_account","fieldtype":"Link","label":"Merchant Account","options":"EdgePay Merchant Account"},
+  {"fieldname":"merchant_branch","fieldtype":"Link","label":"Merchant Branch","options":"EdgePay Merchant Branch"},
   {"fieldname":"provider_account","fieldtype":"Link","label":"Provider Account","options":"EdgePay Provider Account","reqd":1},
   {"fieldname":"provider","fieldtype":"Link","label":"Provider Definition","options":"EdgePay Provider","reqd":1,"read_only":1},
   {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nInitiated\nPaid\nFailed\nExpired\nCancelled","default":"Draft","reqd":1},
