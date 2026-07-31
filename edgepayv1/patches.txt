@@ -3,3 +3,4 @@
 
 [post_model_sync]
 edgepayv1.patches.v2_0_backfill_merchant_tenancy
+edgepayv1.patches.v3_0_backfill_payment_attempts
