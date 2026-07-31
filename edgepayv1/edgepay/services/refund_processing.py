@@ -7,7 +7,7 @@ from frappe.utils import now_datetime
 
 from edgepayv1.edgepay.services.provider_financial_adapters import get_financial_adapter
 from edgepayv1.edgepay.services.security import redact_secrets
-from edgepayv1.edgepay.services.external_references import register_external_reference
+from edgepayv1.edgepay.services.external_references import register_reference
 from edgepayv1.edgepay.services.payment_totals import sync_payment_totals
 from edgepayv1.edgepay.services.payment_state import record_event
 
@@ -34,7 +34,7 @@ def submit_refund(refund_request_name):
 		refund.status = "Processing" if attempt.status in {"Submitted", "Processing"} else attempt.status
 		refund.provider_refund_reference = attempt.provider_reference
 		if refund.provider_refund_reference:
-			register_external_reference(refund.merchant, refund.provider_account, "Refund", refund.provider_refund_reference, payment_request=refund.payment_request, payment_transaction=refund.payment_transaction)
+			register_reference("Refund", refund.provider_refund_reference, refund.payment_request, payment_transaction=refund.payment_transaction)
 		attempt.save(ignore_permissions=True)
 		refund.save(ignore_permissions=True)
 		request = frappe.get_doc("EdgePay Payment Request", refund.payment_request)
@@ -65,6 +65,8 @@ def complete_refund(refund_request_name, provider_reference=None):
 		attempt.status = "Completed"
 		attempt.completed_on = now_datetime()
 		attempt.save(ignore_permissions=True)
+	if refund.provider_refund_reference:
+		register_reference("Refund", refund.provider_refund_reference, refund.payment_request, payment_transaction=refund.payment_transaction)
 	sync_payment_totals(refund.payment_request)
 	request = frappe.get_doc("EdgePay Payment Request", refund.payment_request)
 	record_event(request, transaction=frappe.get_doc("EdgePay Payment Transaction", refund.payment_transaction), event_type="Refund Completed", event_source="refund", details={"refund_request": refund.name, "amount": refund.amount})
