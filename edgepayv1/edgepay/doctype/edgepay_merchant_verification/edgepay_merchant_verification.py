@@ -20,6 +20,7 @@ class EdgePayMerchantVerification(Document):
 	def before_save(self):
 		previous = self.get_doc_before_save()
 		previous_status = previous.status if previous else None
+		self.flags.previous_verification_status = previous_status
 		if self.status == "Submitted" and previous_status != "Submitted":
 			self.submitted_on = now_datetime()
 		if self.status in REVIEW_STATUSES and previous_status != self.status:
@@ -28,6 +29,16 @@ class EdgePayMerchantVerification(Document):
 			self.reviewed_by = frappe.session.user
 
 	def on_update(self):
+		previous_status = getattr(self.flags, "previous_verification_status", None)
+		if previous_status != self.status:
+			from edgepayv1.edgepay.services.verification_audit import record_verification_event
+			record_verification_event(
+				self,
+				self.status if self.status in {"Submitted", "Under Review", "More Information Required", "Verified", "Rejected", "Revoked", "Expired"} else "Created",
+				previous_status=previous_status,
+				new_status=self.status,
+				reason=self.rejection_reason,
+			)
 		if self.status in FINAL_STATUSES or self.status == "More Information Required":
 			from edgepayv1.edgepay.services.merchant_onboarding import sync_merchant_verification_state
 			sync_merchant_verification_state(self.merchant, self.name)
@@ -40,7 +51,6 @@ class EdgePayMerchantVerification(Document):
 		value = (self.masked_identity_reference or "").strip()
 		if not value:
 			return
-		# BVN and NIN are both 11 digits. Refuse likely raw identifiers.
 		if re.fullmatch(r"\d{11}", value):
 			frappe.throw(_("Do not store a raw BVN or NIN. Store only a masked reference."))
 		if sum(character.isdigit() for character in value) > 4 and "*" not in value:
