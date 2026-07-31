@@ -22,7 +22,6 @@
   {"fieldname":"settlement_account_reference","fieldtype":"Data","label":"Settlement Account Reference"}
  ],
  "permissions":[
-  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
-  {"role":"EdgePay Manager","read":1,"report":1}
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1}
  ]
 }
