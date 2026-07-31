@@ -40,18 +40,11 @@ def merchant_permission_query(doctype, user=None):
 
 
 def has_merchant_permission(doc, user=None, permission_type=None):
-	user = user or frappe.session.user
-	merchants = get_user_merchants(user)
+	merchants = get_user_merchants(user or frappe.session.user)
 	if merchants is None:
 		return True
 	merchant = doc.name if doc.doctype == "EdgePay Merchant" else getattr(doc, "merchant", None)
 	return bool(merchant and merchant in merchants)
-
-
-def merchant_record_query(user=None, doctype=None):
-	if not doctype:
-		return "1=0"
-	return merchant_permission_query(doctype, user)
 
 
 def payment_request_query(user=None): return merchant_permission_query("EdgePay Payment Request", user)
@@ -61,5 +54,8 @@ def merchant_account_query(user=None): return merchant_permission_query("EdgePay
 def merchant_branch_query(user=None): return merchant_permission_query("EdgePay Merchant Branch", user)
 def provider_account_query(user=None): return merchant_permission_query("EdgePay Provider Account", user)
 def merchant_verification_query(user=None): return merchant_permission_query("EdgePay Merchant Verification", user)
+def verification_consent_query(user=None): return merchant_permission_query("EdgePay Verification Consent", user)
+def identity_session_query(user=None): return merchant_permission_query("EdgePay Identity Verification Session", user)
+def identity_check_query(user=None): return merchant_permission_query("EdgePay Identity Verification Check", user)
 def webhook_event_query(user=None): return merchant_permission_query("EdgePay Webhook Event", user)
 def handoff_event_query(user=None): return merchant_permission_query("EdgePay Status Handoff Event", user)
