@@ -1,224 +1,40 @@
 {
- "actions": [],
- "creation": "2026-06-11 11:32:00",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "naming_series",
-  "request_reference",
-  "provider",
-  "status",
-  "idempotency_key",
-  "source_section",
-  "source_app",
-  "source_doctype",
-  "source_name",
-  "payment_details_section",
-  "amount",
-  "currency",
-  "payment_purpose",
-  "customer_details_section",
-  "customer_name",
-  "customer_email",
-  "customer_phone",
-  "provider_section",
-  "provider_reference",
-  "checkout_url",
-  "expires_on",
-  "metadata_section",
-  "metadata_json"
+ "doctype":"DocType","name":"EdgePay Payment Request","module":"EdgePay","autoname":"naming_series:","naming_rule":"By \"Naming Series\" field","track_changes":1,"engine":"InnoDB",
+ "field_order":["naming_series","request_reference","merchant","provider_account","provider","status","idempotency_key","source_section","source_app","source_doctype","source_name","external_tenant_reference","external_company_reference","external_branch_reference","payment_details_section","amount","currency","payment_purpose","customer_details_section","customer_name","customer_email","customer_phone","provider_section","provider_reference","checkout_url","expires_on","metadata_section","metadata_json"],
+ "fields":[
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Naming Series","options":"EP-PRQ-.YYYY.-","default":"EP-PRQ-.YYYY.-","reqd":1},
+  {"fieldname":"request_reference","fieldtype":"Data","label":"Request Reference","reqd":1,"unique":1,"search_index":1},
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"provider_account","fieldtype":"Link","label":"Provider Account","options":"EdgePay Provider Account","reqd":1},
+  {"fieldname":"provider","fieldtype":"Link","label":"Provider Definition","options":"EdgePay Provider","reqd":1,"read_only":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nInitiated\nPaid\nFailed\nExpired\nCancelled","default":"Draft","reqd":1},
+  {"fieldname":"idempotency_key","fieldtype":"Data","label":"Idempotency Key","search_index":1},
+  {"fieldname":"source_section","fieldtype":"Section Break","label":"Source Details"},
+  {"fieldname":"source_app","fieldtype":"Data","label":"Source App"},
+  {"fieldname":"source_doctype","fieldtype":"Data","label":"Source DocType"},
+  {"fieldname":"source_name","fieldtype":"Data","label":"Source Document Name"},
+  {"fieldname":"external_tenant_reference","fieldtype":"Data","label":"External Tenant Reference","search_index":1},
+  {"fieldname":"external_company_reference","fieldtype":"Data","label":"External Company Reference"},
+  {"fieldname":"external_branch_reference","fieldtype":"Data","label":"External Branch Reference"},
+  {"fieldname":"payment_details_section","fieldtype":"Section Break","label":"Payment Details"},
+  {"fieldname":"amount","fieldtype":"Currency","label":"Amount","reqd":1,"options":"currency"},
+  {"fieldname":"currency","fieldtype":"Link","label":"Currency","options":"Currency","reqd":1},
+  {"fieldname":"payment_purpose","fieldtype":"Small Text","label":"Payment Purpose"},
+  {"fieldname":"customer_details_section","fieldtype":"Section Break","label":"Customer Details"},
+  {"fieldname":"customer_name","fieldtype":"Data","label":"Customer Name","reqd":1},
+  {"fieldname":"customer_email","fieldtype":"Data","label":"Customer Email","reqd":1},
+  {"fieldname":"customer_phone","fieldtype":"Data","label":"Customer Phone"},
+  {"fieldname":"provider_section","fieldtype":"Section Break","label":"Provider Details"},
+  {"fieldname":"provider_reference","fieldtype":"Data","label":"Provider Reference","read_only":1},
+  {"fieldname":"checkout_url","fieldtype":"Data","label":"Checkout URL","read_only":1},
+  {"fieldname":"expires_on","fieldtype":"Datetime","label":"Expires On"},
+  {"fieldname":"metadata_section","fieldtype":"Section Break","label":"Metadata","collapsible":1},
+  {"fieldname":"metadata_json","fieldtype":"Code","label":"Metadata JSON","options":"JSON"}
  ],
- "fields": [
-  {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
-   "label": "Naming Series",
-   "options": "EP-PRQ-.YYYY.-",
-   "reqd": 1,
-   "default": "EP-PRQ-.YYYY.-"
-  },
-  {
-   "fieldname": "request_reference",
-   "fieldtype": "Data",
-   "label": "Request Reference",
-   "reqd": 1,
-   "unique": 1,
-   "search_index": 1,
-   "description": "Unique internal identifier for the request"
-  },
-  {
-   "fieldname": "provider",
-   "fieldtype": "Link",
-   "label": "Provider",
-   "options": "EdgePay Provider",
-   "reqd": 1
-  },
-  {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "Status",
-   "options": "Draft\nInitiated\nPaid\nFailed\nExpired\nCancelled",
-   "default": "Draft",
-   "reqd": 1
-  },
-  {
-   "fieldname": "idempotency_key",
-   "fieldtype": "Data",
-   "label": "Idempotency Key",
-   "search_index": 1,
-   "description": "Uniqueness constraint for payment initialization request"
-  },
-  {
-   "fieldname": "source_section",
-   "fieldtype": "Section Break",
-   "label": "Source Details"
-  },
-  {
-   "fieldname": "source_app",
-   "fieldtype": "Data",
-   "label": "Source App",
-   "description": "The application that initiated this request (e.g. ERPNext, VetEdge)"
-  },
-  {
-   "fieldname": "source_doctype",
-   "fieldtype": "Data",
-   "label": "Source DocType",
-   "description": "Source DocType name (e.g. Sales Invoice)"
-  },
-  {
-   "fieldname": "source_name",
-   "fieldtype": "Data",
-   "label": "Source Document Name"
-  },
-  {
-   "fieldname": "payment_details_section",
-   "fieldtype": "Section Break",
-   "label": "Payment Details"
-  },
-  {
-   "fieldname": "amount",
-   "fieldtype": "Currency",
-   "label": "Amount",
-   "reqd": 1,
-   "options": "currency"
-  },
-  {
-   "fieldname": "currency",
-   "fieldtype": "Link",
-   "label": "Currency",
-   "options": "Currency",
-   "reqd": 1
-  },
-  {
-   "fieldname": "payment_purpose",
-   "fieldtype": "Small Text",
-   "label": "Payment Purpose"
-  },
-  {
-   "fieldname": "customer_details_section",
-   "fieldtype": "Section Break",
-   "label": "Customer Details"
-  },
-  {
-   "fieldname": "customer_name",
-   "fieldtype": "Data",
-   "label": "Customer Name",
-   "reqd": 1
-  },
-  {
-   "fieldname": "customer_email",
-   "fieldtype": "Data",
-   "label": "Customer Email",
-   "reqd": 1
-  },
-  {
-   "fieldname": "customer_phone",
-   "fieldtype": "Data",
-   "label": "Customer Phone"
-  },
-  {
-   "fieldname": "provider_section",
-   "fieldtype": "Section Break",
-   "label": "Provider Details"
-  },
-  {
-   "fieldname": "provider_reference",
-   "fieldtype": "Data",
-   "label": "Provider Reference",
-   "read_only": 1
-  },
-  {
-   "fieldname": "checkout_url",
-   "fieldtype": "Data",
-   "label": "Checkout URL",
-   "read_only": 1
-  },
-  {
-   "fieldname": "expires_on",
-   "fieldtype": "Datetime",
-   "label": "Expires On"
-  },
-  {
-   "fieldname": "metadata_section",
-   "fieldtype": "Section Break",
-   "label": "Metadata",
-   "collapsible": 1
-  },
-  {
-   "fieldname": "metadata_json",
-   "fieldtype": "Code",
-   "label": "Metadata JSON",
-   "options": "JSON"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-06-11 11:32:00",
- "modified_by": "Administrator",
- "module": "EdgePay",
- "name": "EdgePay Payment Request",
- "owner": "Administrator",
- "autoname": "naming_series:",
- "naming_rule": "By \"Naming Series\" field",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "EdgePay Admin",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "EdgePay Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "read": 1,
-   "write": 1,
-   "role": "EdgePay User"
-  },
-  {
-   "read": 1,
-   "role": "EdgePay Auditor"
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"write":1,"create":1,"report":1,"export":1},
+  {"role":"EdgePay User","read":1,"write":1,"create":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
 }
