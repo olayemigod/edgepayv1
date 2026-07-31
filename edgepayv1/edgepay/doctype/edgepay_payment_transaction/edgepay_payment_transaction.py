@@ -8,6 +8,7 @@ from frappe.utils import flt
 class EdgePayPaymentTransaction(Document):
 	def validate(self):
 		self.set_scope_from_payment_request()
+		self.validate_payment_attempt()
 		self.validate_amount_and_currency()
 		self.validate_provider()
 		self.validate_status()
@@ -24,6 +25,15 @@ class EdgePayPaymentTransaction(Document):
 			account_merchant = frappe.db.get_value("EdgePay Provider Account", self.provider_account, "merchant")
 			if account_merchant != self.merchant:
 				frappe.throw(_("Transaction Provider Account does not belong to the Payment Request Merchant"))
+
+	def validate_payment_attempt(self):
+		if not self.payment_attempt:
+			return
+		attempt = frappe.get_doc("EdgePay Payment Attempt", self.payment_attempt)
+		if attempt.payment_request != self.payment_request:
+			frappe.throw(_("Payment Attempt does not belong to the selected Payment Request"))
+		if attempt.merchant != self.merchant or attempt.provider_account != self.provider_account:
+			frappe.throw(_("Payment Attempt scope does not match the Transaction scope"))
 
 	def validate_idempotency_key(self):
 		if self.idempotency_key:
