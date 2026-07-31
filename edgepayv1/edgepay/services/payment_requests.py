@@ -77,7 +77,7 @@ def create_payment_request_record(
 			{
 				"merchant": merchant,
 				"idempotency_key": idempotency_key,
-				"status": ["not in", ["Paid", "Failed", "Expired", "Cancelled"]],
+				"status": ["not in", ["Paid", "Overpaid", "Refunded", "Failed", "Expired", "Cancelled"]],
 			},
 			"name",
 		)
@@ -91,6 +91,9 @@ def create_payment_request_record(
 	request.provider_account = account.name
 	request.provider = provider
 	request.amount = flt(amount)
+	request.paid_amount = 0
+	request.outstanding_amount = flt(amount)
+	request.refunded_amount = 0
 	request.currency = currency
 	request.customer_name = customer_name
 	request.customer_email = customer_email
@@ -116,6 +119,8 @@ def create_payment_request_record(
 
 	request.request_reference = f"REQ-{frappe.generate_hash(length=12)}"
 	request.insert()
+	from edgepayv1.edgepay.services.external_references import register_reference
+	register_reference("Payment Request", request.request_reference, request.name)
 	return _success_response(request, "Payment request created successfully")
 
 
@@ -131,6 +136,8 @@ def _success_response(request, message):
 			"provider_account": request.provider_account,
 			"status": request.status,
 			"amount": request.amount,
+			"paid_amount": getattr(request, "paid_amount", 0),
+			"outstanding_amount": getattr(request, "outstanding_amount", request.amount),
 			"currency": request.currency,
 			"provider": request.provider,
 			"expires_on": request.expires_on,
