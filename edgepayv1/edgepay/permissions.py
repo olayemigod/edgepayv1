@@ -13,7 +13,11 @@ MERCHANT_SCOPED_DOCTYPES = {
 	"EdgePay Identity Verification Session": "merchant",
 	"EdgePay Identity Verification Check": "merchant",
 	"EdgePay Payment Request": "merchant",
+	"EdgePay Payment Attempt": "merchant",
 	"EdgePay Payment Transaction": "merchant",
+	"EdgePay Payment Event": "merchant",
+	"EdgePay External Reference": "merchant",
+	"EdgePay Refund Request": "merchant",
 	"EdgePay Webhook Event": "merchant",
 	"EdgePay Status Handoff Event": "merchant",
 }
@@ -48,7 +52,11 @@ def has_merchant_permission(doc, user=None, permission_type=None):
 
 
 def payment_request_query(user=None): return merchant_permission_query("EdgePay Payment Request", user)
+def payment_attempt_query(user=None): return merchant_permission_query("EdgePay Payment Attempt", user)
 def payment_transaction_query(user=None): return merchant_permission_query("EdgePay Payment Transaction", user)
+def payment_event_query(user=None): return merchant_permission_query("EdgePay Payment Event", user)
+def external_reference_query(user=None): return merchant_permission_query("EdgePay External Reference", user)
+def refund_request_query(user=None): return merchant_permission_query("EdgePay Refund Request", user)
 def merchant_query(user=None): return merchant_permission_query("EdgePay Merchant", user)
 def merchant_account_query(user=None): return merchant_permission_query("EdgePay Merchant Account", user)
 def merchant_branch_query(user=None): return merchant_permission_query("EdgePay Merchant Branch", user)
