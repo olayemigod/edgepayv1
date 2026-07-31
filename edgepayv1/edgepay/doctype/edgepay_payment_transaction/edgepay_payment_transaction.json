@@ -1,9 +1,10 @@
 {
  "doctype":"DocType","name":"EdgePay Payment Transaction","module":"EdgePay","autoname":"naming_series:","naming_rule":"By \"Naming Series\" field","track_changes":1,"engine":"InnoDB",
- "field_order":["naming_series","payment_request","merchant","provider_account","provider","status","transaction_reference","idempotency_key","amount_details_section","amount","currency","provider_response_section","provider_reference","paid_on","settlement_status","raw_response_section","raw_response_json"],
+ "field_order":["naming_series","payment_request","payment_attempt","merchant","provider_account","provider","status","transaction_reference","idempotency_key","amount_details_section","amount","currency","provider_response_section","provider_reference","paid_on","settlement_status","raw_response_section","raw_response_json"],
  "fields":[
   {"fieldname":"naming_series","fieldtype":"Select","label":"Naming Series","options":"EP-TXN-.YYYY.-","default":"EP-TXN-.YYYY.-","reqd":1},
   {"fieldname":"payment_request","fieldtype":"Link","label":"Payment Request","options":"EdgePay Payment Request","reqd":1},
+  {"fieldname":"payment_attempt","fieldtype":"Link","label":"Payment Attempt","options":"EdgePay Payment Attempt","search_index":1},
   {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
   {"fieldname":"provider_account","fieldtype":"Link","label":"Provider Account","options":"EdgePay Provider Account","reqd":1},
   {"fieldname":"provider","fieldtype":"Link","label":"Provider Definition","options":"EdgePay Provider","reqd":1,"read_only":1},
