@@ -1,0 +1,28 @@
+{
+ "doctype":"DocType",
+ "name":"EdgePay Provider Account",
+ "module":"EdgePay",
+ "autoname":"format:{merchant}-{provider}-{environment}-{account_label}",
+ "track_changes":1,
+ "engine":"InnoDB",
+ "field_order":["merchant","provider","account_label","environment","enabled","status","credentials_section","api_key","secret_key","contract_code","webhook_token","settlement_section","settlement_account_reference"],
+ "fields":[
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"provider","fieldtype":"Link","label":"Provider Definition","options":"EdgePay Provider","reqd":1},
+  {"fieldname":"account_label","fieldtype":"Data","label":"Account Label","default":"Primary","reqd":1},
+  {"fieldname":"environment","fieldtype":"Select","label":"Environment","options":"Sandbox\nLive","default":"Sandbox","reqd":1},
+  {"fieldname":"enabled","fieldtype":"Check","label":"Enabled","default":"0"},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nPending Verification\nActive\nSuspended\nDisabled","default":"Draft","reqd":1},
+  {"fieldname":"credentials_section","fieldtype":"Section Break","label":"Merchant Provider Credentials"},
+  {"fieldname":"api_key","fieldtype":"Password","label":"API Key / Public Key"},
+  {"fieldname":"secret_key","fieldtype":"Password","label":"Secret Key"},
+  {"fieldname":"contract_code","fieldtype":"Data","label":"Contract Code"},
+  {"fieldname":"webhook_token","fieldtype":"Password","label":"Webhook Endpoint Token"},
+  {"fieldname":"settlement_section","fieldtype":"Section Break","label":"Settlement"},
+  {"fieldname":"settlement_account_reference","fieldtype":"Data","label":"Settlement Account Reference"}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"report":1}
+ ]
+}
