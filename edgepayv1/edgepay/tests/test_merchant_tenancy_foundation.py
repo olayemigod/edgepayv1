@@ -4,6 +4,7 @@ from pathlib import Path
 from frappe.tests.utils import FrappeTestCase
 
 from edgepayv1.edgepay.services.authorization import require_merchant_access
+from edgepayv1.edgepay.services.payment_requests import resolve_provider_account
 
 APP_ROOT = Path(__file__).resolve().parents[2]
 
@@ -24,8 +25,9 @@ class TestMerchantTenancyFoundation(FrappeTestCase):
 			self.assertIn('"fieldname":"merchant"', schema)
 			self.assertIn('"fieldname":"provider_account"', schema)
 
-	def test_merchant_authorization_helper_is_available(self):
+	def test_tenancy_helpers_are_available(self):
 		self.assertTrue(callable(require_merchant_access))
+		self.assertTrue(callable(resolve_provider_account))
 
 	def test_legacy_backfill_is_registered(self):
 		patches = (APP_ROOT / "patches.txt").read_text()
