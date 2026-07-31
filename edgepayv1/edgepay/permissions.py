@@ -18,6 +18,12 @@ MERCHANT_SCOPED_DOCTYPES = {
 	"EdgePay Payment Event": "merchant",
 	"EdgePay External Reference": "merchant",
 	"EdgePay Refund Request": "merchant",
+	"EdgePay Refund Processing Attempt": "merchant",
+	"EdgePay Dispute": "merchant",
+	"EdgePay Chargeback": "merchant",
+	"EdgePay Fee Record": "merchant",
+	"EdgePay Settlement Batch": "merchant",
+	"EdgePay Settlement Item": "merchant",
 	"EdgePay Webhook Event": "merchant",
 	"EdgePay Status Handoff Event": "merchant",
 }
@@ -57,6 +63,12 @@ def payment_transaction_query(user=None): return merchant_permission_query("Edge
 def payment_event_query(user=None): return merchant_permission_query("EdgePay Payment Event", user)
 def external_reference_query(user=None): return merchant_permission_query("EdgePay External Reference", user)
 def refund_request_query(user=None): return merchant_permission_query("EdgePay Refund Request", user)
+def refund_processing_attempt_query(user=None): return merchant_permission_query("EdgePay Refund Processing Attempt", user)
+def dispute_query(user=None): return merchant_permission_query("EdgePay Dispute", user)
+def chargeback_query(user=None): return merchant_permission_query("EdgePay Chargeback", user)
+def fee_record_query(user=None): return merchant_permission_query("EdgePay Fee Record", user)
+def settlement_batch_query(user=None): return merchant_permission_query("EdgePay Settlement Batch", user)
+def settlement_item_query(user=None): return merchant_permission_query("EdgePay Settlement Item", user)
 def merchant_query(user=None): return merchant_permission_query("EdgePay Merchant", user)
 def merchant_account_query(user=None): return merchant_permission_query("EdgePay Merchant Account", user)
 def merchant_branch_query(user=None): return merchant_permission_query("EdgePay Merchant Branch", user)
