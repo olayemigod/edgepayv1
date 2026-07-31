@@ -12,6 +12,10 @@ fixtures = [
 	}
 ]
 
+doctype_js = {
+	"EdgePay Payment Request": "public/js/edgepay_payment_request.js",
+}
+
 permission_query_conditions = {
 	"EdgePay Merchant": "edgepayv1.permissions.merchant_query",
 	"EdgePay Merchant Account": "edgepayv1.permissions.merchant_account_query",
