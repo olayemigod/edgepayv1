@@ -18,9 +18,16 @@ ATTEMPT_TRANSITIONS = {
 }
 REQUEST_TRANSITIONS = {
 	"Draft": {"Initiated", "Cancelled", "Expired"},
-	"Initiated": {"Paid", "Failed", "Cancelled", "Expired"},
-	"Paid": set(),
-	"Failed": {"Initiated", "Paid", "Cancelled", "Expired"},
+	"Initiated": {"Partly Paid", "Paid", "Overpaid", "Failed", "Cancelled", "Expired"},
+	"Partly Paid": {"Initiated", "Paid", "Overpaid", "Refund Pending", "Partly Refunded", "Refunded", "Disputed", "Chargeback", "Cancelled"},
+	"Paid": {"Refund Pending", "Partly Refunded", "Refunded", "Disputed", "Chargeback"},
+	"Overpaid": {"Refund Pending", "Partly Refunded", "Refunded", "Disputed", "Chargeback"},
+	"Refund Pending": {"Partly Refunded", "Refunded", "Paid", "Failed"},
+	"Partly Refunded": {"Refund Pending", "Refunded", "Paid", "Disputed", "Chargeback"},
+	"Refunded": {"Disputed", "Chargeback"},
+	"Disputed": {"Paid", "Partly Refunded", "Refunded", "Chargeback"},
+	"Chargeback": set(),
+	"Failed": {"Initiated", "Partly Paid", "Paid", "Overpaid", "Cancelled", "Expired"},
 	"Expired": set(),
 	"Cancelled": set(),
 }
