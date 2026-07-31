@@ -67,6 +67,9 @@ def create_payment_request_record(
 	provider_doc = frappe.get_doc("EdgePay Provider", provider)
 	if not provider_doc.enabled or not account.enabled or account.status != "Active":
 		frappe.throw(_("The selected provider account is not active"))
+	if account.environment == "Live":
+		from edgepayv1.edgepay.services.merchant_onboarding import require_live_payment_eligibility
+		require_live_payment_eligibility(merchant)
 
 	if idempotency_key:
 		existing_name = frappe.db.get_value(
