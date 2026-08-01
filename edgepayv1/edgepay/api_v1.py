@@ -14,7 +14,7 @@ def _request_body():
 	raw = request.get_data(cache=True) if request else b"{}"
 	try:
 		data = json.loads(raw.decode("utf-8") if isinstance(raw, bytes) else raw or "{}")
-	 except Exception:
+	except Exception:
 		frappe.throw(_("Invalid JSON request body"))
 	if not isinstance(data, dict):
 		frappe.throw(_("Request body must be a JSON object"))
