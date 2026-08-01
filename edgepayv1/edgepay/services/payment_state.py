@@ -35,9 +35,7 @@ REQUEST_TRANSITIONS = {
 
 def create_attempt(payment_request_name, payment_method=None, expires_on=None):
 	request = frappe.get_doc("EdgePay Payment Request", payment_request_name)
-	latest = frappe.db.get_value(
-		"EdgePay Payment Attempt", {"payment_request": request.name}, "attempt_number", order_by="attempt_number desc"
-	) or 0
+	latest = frappe.db.get_value("EdgePay Payment Attempt", {"payment_request": request.name}, "attempt_number", order_by="attempt_number desc") or 0
 	attempt = frappe.new_doc("EdgePay Payment Attempt")
 	attempt.payment_request = request.name
 	attempt.attempt_number = int(latest) + 1
@@ -78,6 +76,10 @@ def transition_request(request, new_status, event_type, event_source=None, attem
 	return request
 
 
+def _event_key(event_type):
+	return str(event_type or "payment.updated").strip().lower().replace(" ", ".").replace("_", ".")
+
+
 def record_event(request, attempt=None, transaction=None, event_type=None, previous_status=None, new_status=None, event_source=None, details=None):
 	event = frappe.new_doc("EdgePay Payment Event")
 	event.merchant = request.merchant
@@ -93,4 +95,28 @@ def record_event(request, attempt=None, transaction=None, event_type=None, previ
 	event.actor = frappe.session.user or "System"
 	event.details_json = json.dumps(redact_secrets(details or {}), indent=2)
 	event.insert(ignore_permissions=True)
+	try:
+		from edgepayv1.edgepay.services.deliveries import create_delivery
+		create_delivery(
+			request.merchant,
+			_event_key(event.event_type),
+			{
+				"payment_event": event.name,
+				"payment_request": request.name,
+				"request_reference": request.request_reference,
+				"payment_attempt": event.payment_attempt,
+				"payment_transaction": event.payment_transaction,
+				"previous_status": previous_status,
+				"new_status": new_status,
+				"event_source": event_source,
+				"amount": request.amount,
+				"paid_amount": getattr(request, "paid_amount", None),
+				"outstanding_amount": getattr(request, "outstanding_amount", None),
+				"currency": request.currency,
+			},
+			payment_request=request.name,
+			payment_transaction=event.payment_transaction,
+		)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), f"EdgePay delivery enqueue failed for event {event.name}")
 	return event
