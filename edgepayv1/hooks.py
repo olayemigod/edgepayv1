@@ -9,6 +9,13 @@ fixtures = [{"dt": "Role", "filters": [["role_name", "in", ["EdgePay Admin", "Ed
 
 doctype_js = {"EdgePay Payment Request": "public/js/edgepay_payment_request.js"}
 
+scheduler_events = {
+	"cron": {
+		"*/5 * * * *": ["edgepayv1.edgepay.services.delivery_worker.process_pending_deliveries"],
+	},
+	"daily": ["edgepayv1.edgepay.services.delivery_worker.cleanup_expired_api_nonces"],
+}
+
 permission_query_conditions = {
 	"EdgePay Merchant": "edgepayv1.permissions.merchant_query",
 	"EdgePay Merchant Account": "edgepayv1.permissions.merchant_account_query",
