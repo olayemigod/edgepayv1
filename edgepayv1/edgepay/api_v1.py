@@ -21,6 +21,15 @@ def _request_body():
 	return raw, data
 
 
+def _payment_name(merchant, payment_reference):
+	name = frappe.db.get_value("EdgePay Payment Request", {"merchant": merchant, "request_reference": payment_reference}, "name")
+	if not name and frappe.db.exists("EdgePay Payment Request", {"name": payment_reference, "merchant": merchant}):
+		name = payment_reference
+	if not name:
+		frappe.throw(_("Payment Request not found"))
+	return name
+
+
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 def create_payment_request_v1():
 	raw, data = _request_body()
@@ -51,13 +60,7 @@ def create_payment_request_v1():
 @frappe.whitelist(allow_guest=True, methods=["GET"])
 def get_payment_request_v1(payment_reference):
 	client = authenticate_api_request("payments:read", method="GET", raw_body=b"")
-	name = frappe.db.get_value(
-		"EdgePay Payment Request",
-		{"merchant": client.merchant, "request_reference": payment_reference},
-		"name",
-	) or (payment_reference if frappe.db.exists("EdgePay Payment Request", {"name": payment_reference, "merchant": client.merchant}) else None)
-	if not name:
-		frappe.throw(_("Payment Request not found"))
+	name = _payment_name(client.merchant, payment_reference)
 	from edgepayv1.edgepay.services.payment_timeline import get_payment_timeline
 	return {"api_version": "v1", "data": redact_secrets(get_payment_timeline(name))}
 
@@ -66,8 +69,49 @@ def get_payment_request_v1(payment_reference):
 def initialize_payment_request_v1(payment_reference):
 	raw, data = _request_body()
 	client = authenticate_api_request("payments:create", raw_body=raw)
-	name = frappe.db.get_value("EdgePay Payment Request", {"merchant": client.merchant, "request_reference": payment_reference}, "name")
-	if not name:
-		frappe.throw(_("Payment Request not found"))
+	name = _payment_name(client.merchant, payment_reference)
 	from edgepayv1.edgepay.services.checkout import initialize_checkout
 	return {"api_version": "v1", "data": redact_secrets(initialize_checkout(name, payment_method=data.get("payment_method")))}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def verify_payment_request_v1(payment_reference):
+	raw, _data = _request_body()
+	client = authenticate_api_request("payments:verify", raw_body=raw)
+	name = _payment_name(client.merchant, payment_reference)
+	from edgepayv1.edgepay.services.verification import verify_transaction
+	return {"api_version": "v1", "data": redact_secrets(verify_transaction(name))}
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def get_transaction_v1(transaction_reference):
+	client = authenticate_api_request("transactions:read", method="GET", raw_body=b"")
+	name = frappe.db.get_value("EdgePay Payment Transaction", {"merchant": client.merchant, "transaction_reference": transaction_reference}, "name")
+	if not name:
+		name = frappe.db.get_value("EdgePay Payment Transaction", {"merchant": client.merchant, "provider_reference": transaction_reference}, "name")
+	if not name:
+		frappe.throw(_("Transaction not found"))
+	txn = frappe.get_doc("EdgePay Payment Transaction", name)
+	return {"api_version": "v1", "data": redact_secrets({"transaction": txn.name, "payment_request": txn.payment_request, "payment_attempt": txn.payment_attempt, "status": txn.status, "amount": txn.amount, "currency": txn.currency, "provider_reference": txn.provider_reference, "transaction_reference": txn.transaction_reference, "paid_on": txn.paid_on, "settlement_status": txn.settlement_status})}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def create_refund_v1():
+	raw, data = _request_body()
+	client = authenticate_api_request("refunds:create", raw_body=raw)
+	txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"merchant": client.merchant, "transaction_reference": data.get("transaction_reference")}, "name")
+	if not txn_name:
+		frappe.throw(_("Transaction not found"))
+	from edgepayv1.edgepay.services.refunds import create_refund_request
+	refund = create_refund_request(txn_name, data.get("amount"), data.get("reason"))
+	return {"api_version": "v1", "data": {"refund_reference": refund.name, "status": refund.status, "amount": refund.amount, "currency": refund.currency}}
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def get_refund_v1(refund_reference):
+	client = authenticate_api_request("refunds:create", method="GET", raw_body=b"")
+	name = frappe.db.get_value("EdgePay Refund Request", {"merchant": client.merchant, "name": refund_reference}, "name")
+	if not name:
+		frappe.throw(_("Refund Request not found"))
+	refund = frappe.get_doc("EdgePay Refund Request", name)
+	return {"api_version": "v1", "data": redact_secrets({"refund_reference": refund.name, "payment_request": refund.payment_request, "payment_transaction": refund.payment_transaction, "status": refund.status, "amount": refund.amount, "currency": refund.currency, "provider_refund_reference": refund.provider_refund_reference, "completed_on": refund.completed_on})}
