@@ -12,6 +12,12 @@ MERCHANT_SCOPED_DOCTYPES = {
 	"EdgePay Verification Consent": "merchant",
 	"EdgePay Identity Verification Session": "merchant",
 	"EdgePay Identity Verification Check": "merchant",
+	"EdgePay API Client": "merchant",
+	"EdgePay API Request Nonce": "merchant",
+	"EdgePay API Usage Log": "merchant",
+	"EdgePay Delivery Endpoint": "merchant",
+	"EdgePay Delivery": "merchant",
+	"EdgePay Delivery Attempt": "merchant",
 	"EdgePay Payment Request": "merchant",
 	"EdgePay Payment Attempt": "merchant",
 	"EdgePay Payment Transaction": "merchant",
@@ -69,6 +75,12 @@ def chargeback_query(user=None): return merchant_permission_query("EdgePay Charg
 def fee_record_query(user=None): return merchant_permission_query("EdgePay Fee Record", user)
 def settlement_batch_query(user=None): return merchant_permission_query("EdgePay Settlement Batch", user)
 def settlement_item_query(user=None): return merchant_permission_query("EdgePay Settlement Item", user)
+def api_client_query(user=None): return merchant_permission_query("EdgePay API Client", user)
+def api_nonce_query(user=None): return merchant_permission_query("EdgePay API Request Nonce", user)
+def api_usage_query(user=None): return merchant_permission_query("EdgePay API Usage Log", user)
+def delivery_endpoint_query(user=None): return merchant_permission_query("EdgePay Delivery Endpoint", user)
+def delivery_query(user=None): return merchant_permission_query("EdgePay Delivery", user)
+def delivery_attempt_query(user=None): return merchant_permission_query("EdgePay Delivery Attempt", user)
 def merchant_query(user=None): return merchant_permission_query("EdgePay Merchant", user)
 def merchant_account_query(user=None): return merchant_permission_query("EdgePay Merchant Account", user)
 def merchant_branch_query(user=None): return merchant_permission_query("EdgePay Merchant Branch", user)
