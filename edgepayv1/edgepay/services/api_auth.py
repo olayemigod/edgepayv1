@@ -7,6 +7,8 @@ import frappe
 from frappe import _
 from frappe.utils import get_datetime, now_datetime
 
+from edgepayv1.edgepay.services.api_usage import enforce_rate_limit, log_api_usage
+
 MAX_CLOCK_SKEW_SECONDS = 300
 
 
@@ -47,6 +49,7 @@ def authenticate_api_request(required_scope=None, method=None, path=None, raw_bo
 
 	method = (method or getattr(getattr(frappe.local, "request", None), "method", "POST")).upper()
 	path = path or getattr(getattr(frappe.local, "request", None), "path", "")
+	enforce_rate_limit(client, request_path=path)
 	body_bytes = raw_body if isinstance(raw_body, bytes) else str(raw_body or "").encode()
 	body_hash = hashlib.sha256(body_bytes).hexdigest()
 	canonical = "\n".join([method, path, str(timestamp), nonce, body_hash])
@@ -66,4 +69,5 @@ def authenticate_api_request(required_scope=None, method=None, path=None, raw_bo
 	nonce_doc.body_hash = body_hash
 	nonce_doc.insert(ignore_permissions=True)
 	client.db_set("last_used_on", now_datetime(), update_modified=False)
+	log_api_usage(client, scope=required_scope, request_method=method, request_path=path, response_status=200)
 	return client
