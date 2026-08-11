@@ -5,6 +5,22 @@ app_description = "Universal payment orchestration layer for Frappe, ERPNext, PO
 app_email = "info@processedge.com.ng"
 app_license = "mit"
 
+# EdgePay renders through the independent local EdgeSuite UI runtime. CoreEdge
+# may provision platform access, but it is not a frontend runtime dependency.
+required_apps = ["edgesuite_ui"]
+app_home = "/app/edgepay-home"
+app_include_js = ["/assets/edgepayv1/js/edgepay_product_menu.js"]
+
+add_to_apps_screen = [
+	{
+		"name": "edgepayv1",
+		"logo": "/assets/edgepayv1/logo.png",
+		"title": "EdgePay",
+		"route": "/app/edgepay-home",
+		"has_permission": "edgepayv1.api.permission.has_app_permission",
+	}
+]
+
 fixtures = [{"dt": "Role", "filters": [["role_name", "in", ["EdgePay Admin", "EdgePay Manager", "EdgePay User", "EdgePay Auditor"]]]}]
 
 doctype_js = {"EdgePay Payment Request": "public/js/edgepay_payment_request.js"}
