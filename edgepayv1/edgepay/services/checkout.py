@@ -32,7 +32,11 @@ def check_and_mark_expired(pr, save=True):
 def _get_reusable_attempt(pr):
 	name = frappe.db.get_value(
 		"EdgePay Payment Attempt",
-		{"payment_request": pr.name, "status": ["in", ["Initiated", "Pending"]], "checkout_url": ["is", "set"]},
+		{
+			"payment_request": pr.name,
+			"status": ["in", ["Initiated", "Pending"]],
+			"checkout_url": ["is", "set"],
+		},
 		"name",
 		order_by="attempt_number desc",
 	)
@@ -43,14 +47,29 @@ def initialize_checkout(payment_request_name, payment_method=None):
 	pr = frappe.get_doc("EdgePay Payment Request", payment_request_name)
 	if check_and_mark_expired(pr):
 		frappe.throw(_("Cannot initialize checkout for an expired Payment Request"))
-	if pr.status in ["Paid", "Overpaid", "Refund Pending", "Partly Refunded", "Refunded", "Expired", "Cancelled", "Disputed", "Chargeback"]:
+	if pr.status in [
+		"Paid",
+		"Overpaid",
+		"Refund Pending",
+		"Partly Refunded",
+		"Refunded",
+		"Expired",
+		"Cancelled",
+		"Disputed",
+		"Chargeback",
+	]:
 		frappe.throw(_("Cannot initialize checkout for a Payment Request with status: {0}").format(pr.status))
 	if not pr.provider_account:
 		frappe.throw(_("Payment Request has no Provider Account"))
 
 	reusable = _get_reusable_attempt(pr)
 	if reusable:
-		return {"status": pr.status, "attempt": reusable.name, "checkout_url": reusable.checkout_url, "provider_reference": reusable.provider_payment_reference}
+		return {
+			"status": pr.status,
+			"attempt": reusable.name,
+			"checkout_url": reusable.checkout_url,
+			"provider_reference": reusable.provider_payment_reference,
+		}
 	if not pr.amount or flt(pr.amount) <= 0:
 		frappe.throw(_("Payment amount must be greater than zero to initialize checkout"))
 
@@ -61,7 +80,10 @@ def initialize_checkout(payment_request_name, payment_method=None):
 	provider_code = provider_instance.get_provider_code()
 	client = get_client(provider_code, provider_instance.provider_doc, provider_instance.provider_account)
 	base_url = provider_instance.get_base_url()
-	log(f"Initializing checkout for {pr.name}, attempt {attempt.name}, via provider {provider_code}", level="info")
+	log(
+		f"Initializing checkout for {pr.name}, attempt {attempt.name}, via provider {provider_code}",
+		level="info",
+	)
 
 	try:
 		response = client.post(f"{base_url}/v1/merchant/transactions/init-transaction", payload)
@@ -69,7 +91,9 @@ def initialize_checkout(payment_request_name, payment_method=None):
 	except Exception as exc:
 		attempt.failure_message = str(exc)
 		attempt.save(ignore_permissions=True)
-		transition_attempt(attempt, "Failed", "Checkout Initialisation Failed", "checkout", details={"error": str(exc)})
+		transition_attempt(
+			attempt, "Failed", "Checkout Initialisation Failed", "checkout", details={"error": str(exc)}
+		)
 		log(f"Checkout initialization failed for {pr.name}: {exc}", level="error")
 		raise
 
@@ -79,10 +103,23 @@ def initialize_checkout(payment_request_name, payment_method=None):
 	attempt.expires_on = parsed_response.get("expires_on") or attempt.expires_on
 	attempt.save(ignore_permissions=True)
 	if attempt.provider_payment_reference:
-		register_reference("Provider Payment", attempt.provider_payment_reference, pr.name, payment_attempt=attempt.name)
+		register_reference(
+			"Provider Payment", attempt.provider_payment_reference, pr.name, payment_attempt=attempt.name
+		)
 	if parsed_response.get("checkout_session_reference"):
-		register_reference("Checkout Session", parsed_response.get("checkout_session_reference"), pr.name, payment_attempt=attempt.name)
-	transition_attempt(attempt, "Initiated", "Checkout Initiated", "checkout", details={"provider_status": parsed_response.get("status")})
+		register_reference(
+			"Checkout Session",
+			parsed_response.get("checkout_session_reference"),
+			pr.name,
+			payment_attempt=attempt.name,
+		)
+	transition_attempt(
+		attempt,
+		"Initiated",
+		"Checkout Initiated",
+		"checkout",
+		details={"provider_status": parsed_response.get("status")},
+	)
 
 	pr.checkout_url = attempt.checkout_url
 	pr.provider_reference = attempt.provider_payment_reference
@@ -97,12 +134,25 @@ def initialize_checkout(payment_request_name, payment_method=None):
 	except Exception as exc:
 		log(f"Failed to dispatch checkout status handoff for {pr.name}: {exc}", level="error")
 
-	return {"status": pr.status, "attempt": attempt.name, "checkout_url": attempt.checkout_url, "provider_reference": attempt.provider_payment_reference}
+	return {
+		"status": pr.status,
+		"attempt": attempt.name,
+		"checkout_url": attempt.checkout_url,
+		"provider_reference": attempt.provider_payment_reference,
+	}
 
 
 @frappe.whitelist()
 def initialize_payment_request_checkout(payment_request_name, payment_method=None):
 	if not frappe.has_permission("EdgePay Payment Request", "write", doc=payment_request_name):
-		frappe.throw(_("Not permitted to initialize checkout for this Payment Request"), frappe.PermissionError)
+		frappe.throw(
+			_("Not permitted to initialize checkout for this Payment Request"), frappe.PermissionError
+		)
 	result = initialize_checkout(payment_request_name, payment_method=payment_method)
-	return {"payment_request": payment_request_name, "payment_attempt": result.get("attempt"), "status": result.get("status"), "checkout_url": result.get("checkout_url"), "provider_reference": result.get("provider_reference")}
+	return {
+		"payment_request": payment_request_name,
+		"payment_attempt": result.get("attempt"),
+		"status": result.get("status"),
+		"checkout_url": result.get("checkout_url"),
+		"provider_reference": result.get("provider_reference"),
+	}
