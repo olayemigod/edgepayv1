@@ -15,7 +15,9 @@ class MonnifyProvider(BaseProvider):
 		return account
 
 	def validate_configuration(self):
-		account = self._credentials()
+		account = self.get_credentials_doc()
+		if not account:
+			return
 		if not account.enabled or account.status != "Active":
 			frappe.throw(_("The selected Monnify Provider Account is not active"))
 		if not account.get_password("api_key"):
