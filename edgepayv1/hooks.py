@@ -21,7 +21,14 @@ add_to_apps_screen = [
 	}
 ]
 
-fixtures = [{"dt": "Role", "filters": [["role_name", "in", ["EdgePay Admin", "EdgePay Manager", "EdgePay User", "EdgePay Auditor"]]]}]
+fixtures = [
+	{
+		"dt": "Role",
+		"filters": [
+			["role_name", "in", ["EdgePay Admin", "EdgePay Manager", "EdgePay User", "EdgePay Auditor"]]
+		],
+	}
+]
 
 doctype_js = {"EdgePay Payment Request": "public/js/edgepay_payment_request.js"}
 
@@ -63,13 +70,36 @@ permission_query_conditions = {
 	"EdgePay Status Handoff Event": "edgepayv1.permissions.handoff_event_query",
 }
 
-has_permission = {doctype: "edgepayv1.permissions.has_merchant_permission" for doctype in [
-	"EdgePay Merchant", "EdgePay Merchant Account", "EdgePay Merchant Branch", "EdgePay Provider Account",
-	"EdgePay Merchant Verification", "EdgePay Verification Consent", "EdgePay Identity Verification Session",
-	"EdgePay Identity Verification Check", "EdgePay API Client", "EdgePay API Request Nonce", "EdgePay API Usage Log",
-	"EdgePay Delivery Endpoint", "EdgePay Delivery", "EdgePay Delivery Attempt", "EdgePay Payment Request",
-	"EdgePay Payment Attempt", "EdgePay Payment Transaction", "EdgePay Payment Event", "EdgePay External Reference",
-	"EdgePay Refund Request", "EdgePay Refund Processing Attempt", "EdgePay Dispute", "EdgePay Chargeback",
-	"EdgePay Fee Record", "EdgePay Settlement Batch", "EdgePay Settlement Item", "EdgePay Webhook Event",
-	"EdgePay Status Handoff Event"
-]}
+has_permission = {
+	doctype: "edgepayv1.permissions.has_merchant_permission"
+	for doctype in [
+		"EdgePay Merchant",
+		"EdgePay Merchant Account",
+		"EdgePay Merchant Branch",
+		"EdgePay Provider Account",
+		"EdgePay Merchant Verification",
+		"EdgePay Verification Consent",
+		"EdgePay Identity Verification Session",
+		"EdgePay Identity Verification Check",
+		"EdgePay API Client",
+		"EdgePay API Request Nonce",
+		"EdgePay API Usage Log",
+		"EdgePay Delivery Endpoint",
+		"EdgePay Delivery",
+		"EdgePay Delivery Attempt",
+		"EdgePay Payment Request",
+		"EdgePay Payment Attempt",
+		"EdgePay Payment Transaction",
+		"EdgePay Payment Event",
+		"EdgePay External Reference",
+		"EdgePay Refund Request",
+		"EdgePay Refund Processing Attempt",
+		"EdgePay Dispute",
+		"EdgePay Chargeback",
+		"EdgePay Fee Record",
+		"EdgePay Settlement Batch",
+		"EdgePay Settlement Item",
+		"EdgePay Webhook Event",
+		"EdgePay Status Handoff Event",
+	]
+}

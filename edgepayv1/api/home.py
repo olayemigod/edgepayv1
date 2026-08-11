@@ -179,7 +179,9 @@ def get_home_context() -> dict:
 		merchant_filter = {"merchant": merchant_name}
 		if _can_read("EdgePay Payment Request"):
 			request_counts = {
-				status: int(frappe.db.count("EdgePay Payment Request", {**merchant_filter, "status": status}) or 0)
+				status: int(
+					frappe.db.count("EdgePay Payment Request", {**merchant_filter, "status": status}) or 0
+				)
 				for status in REQUEST_STATUSES
 			}
 			recent_requests = frappe.get_list(
@@ -191,7 +193,9 @@ def get_home_context() -> dict:
 			)
 		if _can_read("EdgePay Payment Attempt"):
 			attempt_counts = {
-				status: int(frappe.db.count("EdgePay Payment Attempt", {**merchant_filter, "status": status}) or 0)
+				status: int(
+					frappe.db.count("EdgePay Payment Attempt", {**merchant_filter, "status": status}) or 0
+				)
 				for status in ATTEMPT_STATUSES
 			}
 		operational = {
