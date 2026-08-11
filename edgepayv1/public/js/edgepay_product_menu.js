@@ -5,7 +5,7 @@
 	function sections() {
 		const items = [
 			{label:"Overview",icon:"home",items:[{label:"EdgePay Home",icon:"home",route:"/app/edgepay-home"},{label:"Merchant Onboarding",icon:"check",route:"/app/merchant-onboarding"}]},
-			{label:"Payments",icon:"wallet",items:[{label:"Payment Operations",icon:"list",route:"/app/edgepay-payments"},{label:"Payment Links",icon:"link",route:"/app/edgepay-payment-link"},{label:"Payment Attempts",icon:"repeat",route:"/app/edgepay-payment-attempt"},{label:"Transactions",icon:"credit-card",route:"/app/edgepay-payment-transaction"}]},
+			{label:"Payments",icon:"wallet",items:[{label:"Payment Operations",icon:"list",route:"/app/edgepay-payments"},{label:"Payment Links",icon:"link",route:"/app/edgepay-payment-links"},{label:"Payment Attempts",icon:"repeat",route:"/app/edgepay-payment-attempt"},{label:"Transactions",icon:"credit-card",route:"/app/edgepay-payment-transaction"}]},
 			{label:"Finance",icon:"chart",items:[{label:"Finance & Exceptions",icon:"chart",route:"/app/edgepay-finance"},{label:"Fees",icon:"dollar-sign",route:"/app/edgepay-fee-record"}]},
 			{label:"Integrations",icon:"link",items:[{label:"Integration Operations",icon:"link",route:"/app/edgepay-integrations"},{label:"Deliveries",icon:"activity",route:"/app/edgepay-delivery"}]},
 		];
