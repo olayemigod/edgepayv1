@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Central authorization helpers for EdgePay service and API operations."""
 
 import frappe
@@ -18,21 +17,30 @@ def require_authenticated_user():
 def require_any_role(roles, message=None):
 	user = require_authenticated_user()
 	if not set(frappe.get_roles(user)).intersection(set(roles)):
-		frappe.throw(message or _("You are not permitted to perform this EdgePay operation"), frappe.PermissionError)
+		frappe.throw(
+			message or _("You are not permitted to perform this EdgePay operation"), frappe.PermissionError
+		)
 	return user
 
 
 def is_platform_user(user=None):
 	user = user or frappe.session.user
-	return bool(user == "Administrator" or set(frappe.get_roles(user)).intersection(PLATFORM_OPERATIONS_ROLES))
+	return bool(
+		user == "Administrator" or set(frappe.get_roles(user)).intersection(PLATFORM_OPERATIONS_ROLES)
+	)
 
 
 def require_platform_configuration_access():
-	return require_any_role(PLATFORM_CONFIGURATION_ROLES, _("Only an EdgePay Administrator may manage or inspect provider configuration"))
+	return require_any_role(
+		PLATFORM_CONFIGURATION_ROLES,
+		_("Only an EdgePay Administrator may manage or inspect provider configuration"),
+	)
 
 
 def require_platform_operations_access():
-	return require_any_role(PLATFORM_OPERATIONS_ROLES, _("You are not permitted to manage EdgePay platform operations"))
+	return require_any_role(
+		PLATFORM_OPERATIONS_ROLES, _("You are not permitted to manage EdgePay platform operations")
+	)
 
 
 def get_active_merchant_membership(merchant, user=None):
