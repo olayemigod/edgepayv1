@@ -14,7 +14,11 @@ from edgepayv1.edgepay.sdk import (
 	mark_payment_handoff_failed,
 	verify_source_payment,
 )
-from edgepayv1.edgepay.services.clients import SimulatedMonnifyClient, clear_client_overrides, set_client_override
+from edgepayv1.edgepay.services.clients import (
+	SimulatedMonnifyClient,
+	clear_client_overrides,
+	set_client_override,
+)
 from edgepayv1.edgepay.services.webhooks import process_webhook_event
 from edgepayv1.edgepay.tests.utils import (
 	DatabaseStateBackup,
@@ -27,19 +31,16 @@ class TestHandoffQueue(FrappeTestCase):
 	def setUp(self):
 		self.db_backup = DatabaseStateBackup()
 		self.db_backup.backup()
-		super(TestHandoffQueue, self).setUp()
+		super().setUp()
 		clear_client_overrides()
-
 		self.mock_client = SimulatedMonnifyClient()
 		self.mock_client.mock_amount = 3000.00
 		set_client_override("monnify", self.mock_client)
-
 		self.settings = frappe.get_doc("EdgePay Settings")
 		self.settings.sandbox_mode = 1
 		self.settings.enable_edgepay = 1
 		self.settings.allow_external_http_calls = 0
 		self.settings.save()
-
 		self.provider_name = "Test Handoff Provider"
 		frappe.db.delete("EdgePay Provider", {"provider_code": "monnify"})
 		self.provider = frappe.get_doc(
@@ -62,10 +63,11 @@ class TestHandoffQueue(FrappeTestCase):
 			api_key="test_api_key",
 			secret_key="test_secret_key",
 		)
-
 		frappe.set_user("Administrator")
 		frappe.db.delete("EdgePay Webhook Event", {"event_reference": "TXN-MOCK-WEBHOOK-999"})
-		pr_names = frappe.get_all("EdgePay Payment Request", filters={"provider": self.provider_name}, pluck="name")
+		pr_names = frappe.get_all(
+			"EdgePay Payment Request", filters={"provider": self.provider_name}, pluck="name"
+		)
 		if pr_names:
 			frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": ["in", pr_names]})
 			frappe.db.delete("EdgePay Webhook Event", {"linked_payment_request": ["in", pr_names]})
@@ -73,7 +75,9 @@ class TestHandoffQueue(FrappeTestCase):
 	def tearDown(self):
 		clear_client_overrides()
 		frappe.set_user("Administrator")
-		pr_names = frappe.get_all("EdgePay Payment Request", filters={"provider": self.provider_name}, pluck="name")
+		pr_names = frappe.get_all(
+			"EdgePay Payment Request", filters={"provider": self.provider_name}, pluck="name"
+		)
 		if pr_names:
 			frappe.db.delete("EdgePay Payment Transaction", {"payment_request": ["in", pr_names]})
 			frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": ["in", pr_names]})
@@ -82,7 +86,7 @@ class TestHandoffQueue(FrappeTestCase):
 		cleanup_test_merchant_provider_account(self.merchant, self.provider_name)
 		if frappe.db.exists("EdgePay Provider", self.provider_name):
 			frappe.db.delete("EdgePay Provider", self.provider_name)
-		super(TestHandoffQueue, self).tearDown()
+		super().tearDown()
 		self.db_backup.restore()
 
 	def _context(self, source_name, source_app="RetailEdge", source_doctype="Sales Invoice", **extra):
@@ -105,7 +109,9 @@ class TestHandoffQueue(FrappeTestCase):
 		pending = frappe.get_all("EdgePay Status Handoff Event", filters={"payment_request": pr_name})
 		self.assertEqual(len(pending), 0)
 		initialize_source_checkout(pr_name)
-		events = frappe.get_all("EdgePay Status Handoff Event", filters={"payment_request": pr_name}, fields=["*"])
+		events = frappe.get_all(
+			"EdgePay Status Handoff Event", filters={"payment_request": pr_name}, fields=["*"]
+		)
 		self.assertEqual(len(events), 1)
 		self.assertEqual(events[0].event_source, "Checkout")
 		self.assertEqual(events[0].event_type, "Payment Initiated")
@@ -121,7 +127,9 @@ class TestHandoffQueue(FrappeTestCase):
 		initialize_source_checkout(pr_name)
 		frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": pr_name})
 		verify_source_payment(pr_name)
-		events = frappe.get_all("EdgePay Status Handoff Event", filters={"payment_request": pr_name}, fields=["*"])
+		events = frappe.get_all(
+			"EdgePay Status Handoff Event", filters={"payment_request": pr_name}, fields=["*"]
+		)
 		self.assertEqual(len(events), 1)
 		self.assertEqual(events[0].event_source, "Verification")
 		self.assertEqual(events[0].event_type, "Payment Paid")
@@ -134,7 +142,9 @@ class TestHandoffQueue(FrappeTestCase):
 		frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": pr_name})
 		self.mock_client.mock_status = "FAILED"
 		verify_source_payment(pr_name)
-		events = frappe.get_all("EdgePay Status Handoff Event", filters={"payment_request": pr_name}, fields=["*"])
+		events = frappe.get_all(
+			"EdgePay Status Handoff Event", filters={"payment_request": pr_name}, fields=["*"]
+		)
 		self.assertEqual(len(events), 1)
 		self.assertEqual(events[0].event_source, "Verification")
 		self.assertEqual(events[0].event_type, "Payment Failed")
@@ -158,13 +168,13 @@ class TestHandoffQueue(FrappeTestCase):
 			},
 		}
 		body_str = json.dumps(body)
-		signature = hmac.new(
-			"test_secret_key".encode("utf-8"), body_str.encode("utf-8"), hashlib.sha512
-		).hexdigest()
+		signature = hmac.new(b"test_secret_key", body_str.encode("utf-8"), hashlib.sha512).hexdigest()
 		headers = {"content-type": "application/json", "monnify-signature": signature}
 		self.mock_client.mock_webhook_signature = True
 		process_webhook_event("monnify", headers, body_str)
-		events = frappe.get_all("EdgePay Status Handoff Event", filters={"payment_request": pr_name}, fields=["*"])
+		events = frappe.get_all(
+			"EdgePay Status Handoff Event", filters={"payment_request": pr_name}, fields=["*"]
+		)
 		self.assertEqual(len(events), 1)
 		self.assertEqual(events[0].event_source, "Webhook")
 		self.assertEqual(events[0].event_type, "Payment Paid")
@@ -211,7 +221,9 @@ class TestHandoffQueue(FrappeTestCase):
 		self.assertEqual(
 			frappe.db.get_value("EdgePay Status Handoff Event", event_name, "processing_status"), "Delivered"
 		)
-		self.assertEqual(frappe.db.get_value("EdgePay Status Handoff Event", event_name, "delivery_attempts"), 1)
+		self.assertEqual(
+			frappe.db.get_value("EdgePay Status Handoff Event", event_name, "delivery_attempts"), 1
+		)
 		fail = mark_payment_handoff_failed(
 			event_name,
 			error_message="Connection timeout to POSnext using api_key test_api_key and secret_key test_secret_key",
@@ -220,7 +232,9 @@ class TestHandoffQueue(FrappeTestCase):
 		self.assertEqual(
 			frappe.db.get_value("EdgePay Status Handoff Event", event_name, "processing_status"), "Failed"
 		)
-		self.assertEqual(frappe.db.get_value("EdgePay Status Handoff Event", event_name, "delivery_attempts"), 2)
+		self.assertEqual(
+			frappe.db.get_value("EdgePay Status Handoff Event", event_name, "delivery_attempts"), 2
+		)
 		err_msg = frappe.db.get_value("EdgePay Status Handoff Event", event_name, "error_message")
 		self.assertNotIn("test_api_key", err_msg.lower())
 		self.assertNotIn("test_secret_key", err_msg.lower())
@@ -236,11 +250,9 @@ class TestHandoffQueue(FrappeTestCase):
 		res3 = mark_payment_handoff_failed("EP-SHE-2026-00001", "error")
 		self.assertFalse(res3["ok"])
 		self.assertIn("authentication required", res3["message"].lower())
-		from edgepayv1.edgepay.services.api import (
-			get_pending_payment_handoffs as api_get_pending,
-			mark_payment_handoff_delivered as api_mark_delivered,
-			mark_payment_handoff_failed as api_mark_failed,
-		)
+		from edgepayv1.edgepay.services.api import get_pending_payment_handoffs as api_get_pending
+		from edgepayv1.edgepay.services.api import mark_payment_handoff_delivered as api_mark_delivered
+		from edgepayv1.edgepay.services.api import mark_payment_handoff_failed as api_mark_failed
 
 		res4 = api_get_pending(source_app="RetailEdge")
 		self.assertFalse(res4["ok"])
@@ -261,7 +273,7 @@ class TestHandoffQueue(FrappeTestCase):
 			for file in files:
 				if file.endswith(".py"):
 					file_path = os.path.join(root, file)
-					with open(file_path, "r", encoding="utf-8") as f:
+					with open(file_path, encoding="utf-8") as f:
 						content = f.read()
 						for app in forbidden_apps:
 							self.assertNotIn(
