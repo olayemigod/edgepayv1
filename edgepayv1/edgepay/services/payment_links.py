@@ -11,6 +11,18 @@ from edgepayv1.edgepay.services.payment_requests import create_payment_request_r
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
+def _successful_use_count(link):
+	return frappe.db.count(
+		"EdgePay Payment Request",
+		{
+			"merchant": link.merchant,
+			"source_doctype": "EdgePay Payment Link",
+			"source_name": link.name,
+			"status": ["in", ["Paid", "Overpaid", "Refund Pending", "Partly Refunded", "Refunded"]],
+		},
+	)
+
+
 def _get_active_link(public_slug):
 	name = frappe.db.get_value("EdgePay Payment Link", {"public_slug": public_slug}, "name")
 	if not name:
@@ -21,6 +33,8 @@ def _get_active_link(public_slug):
 	if link.expires_on and get_datetime(link.expires_on) <= now_datetime():
 		link.db_set("status", "Expired", update_modified=False)
 		frappe.throw(_("Payment Link has expired"))
+	if getattr(link, "usage_mode", "Reusable") == "One Time" and _successful_use_count(link):
+		frappe.throw(_("This one-time Payment Link has already been used"))
 	provider_account = frappe.get_doc("EdgePay Provider Account", link.provider_account)
 	if not provider_account.enabled or provider_account.status != "Active":
 		frappe.throw(_("Payment provider is temporarily unavailable"))
@@ -40,6 +54,16 @@ def _resolve_amount(link, customer_amount=None):
 	return amount
 
 
+def _branding(merchant):
+	return {
+		"merchant_name": merchant.trading_name or merchant.legal_name or merchant.merchant_name,
+		"logo": getattr(merchant, "checkout_logo", None),
+		"primary_colour": getattr(merchant, "checkout_primary_colour", None) or "#111827",
+		"message": getattr(merchant, "checkout_message", None),
+		"support_email": getattr(merchant, "checkout_support_email", None) or merchant.email,
+	}
+
+
 def public_link_context(public_slug):
 	link, account = _get_active_link(public_slug)
 	merchant = frappe.get_doc("EdgePay Merchant", link.merchant)
@@ -47,12 +71,13 @@ def public_link_context(public_slug):
 		"public_slug": link.public_slug,
 		"title": link.title,
 		"description": link.description,
-		"merchant_name": merchant.trading_name or merchant.legal_name,
+		**_branding(merchant),
 		"amount_mode": link.amount_mode,
 		"amount": flt(link.amount) if link.amount_mode == "Fixed" else None,
 		"minimum_amount": flt(link.minimum_amount) if link.minimum_amount else None,
 		"maximum_amount": flt(link.maximum_amount) if link.maximum_amount else None,
 		"currency": link.currency,
+		"usage_mode": getattr(link, "usage_mode", "Reusable"),
 		"environment": account.environment,
 		"redirect_url": link.redirect_url,
 	}
@@ -107,13 +132,21 @@ def public_payment_status(request_reference):
 	if not name:
 		frappe.throw(_("Payment not found"))
 	request = frappe.get_doc("EdgePay Payment Request", name)
+	merchant = frappe.get_doc("EdgePay Merchant", request.merchant)
+	redirect_url = None
+	if request.source_doctype == "EdgePay Payment Link" and request.source_name and frappe.db.exists("EdgePay Payment Link", request.source_name):
+		redirect_url = frappe.db.get_value("EdgePay Payment Link", request.source_name, "redirect_url")
 	return {
 		"request_reference": request.request_reference,
 		"status": request.status,
 		"amount": flt(request.amount),
 		"paid_amount": flt(getattr(request, "paid_amount", 0)),
 		"outstanding_amount": flt(getattr(request, "outstanding_amount", request.amount)),
+		"refunded_amount": flt(getattr(request, "refunded_amount", 0)),
 		"currency": request.currency,
+		"purpose": request.payment_purpose,
+		"redirect_url": redirect_url,
+		**_branding(merchant),
 	}
 
 
