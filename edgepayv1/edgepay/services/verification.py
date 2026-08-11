@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import json
 import urllib.parse as urlparse
 
@@ -9,7 +8,6 @@ from frappe.utils import flt
 from edgepayv1.edgepay.services.attempt_resolution import resolve_or_create_legacy_attempt
 from edgepayv1.edgepay.services.clients import get_client
 from edgepayv1.edgepay.services.external_references import register_reference
-from edgepayv1.edgepay.services.logging import log
 from edgepayv1.edgepay.services.payment_state import transition_attempt
 from edgepayv1.edgepay.services.payment_totals import sync_payment_totals
 from edgepayv1.edgepay.services.providers.registry import get_provider_instance
@@ -19,16 +17,23 @@ from edgepayv1.edgepay.services.security import redact_secrets
 def verify_transaction(payment_request_name):
 	pr = frappe.get_doc("EdgePay Payment Request", payment_request_name)
 	from edgepayv1.edgepay.services.checkout import check_and_mark_expired
+
 	check_and_mark_expired(pr)
 	if not pr.provider or not pr.provider_reference:
 		frappe.throw(_("Payment Request has no provider reference generated"))
+	if not pr.provider_account:
+		frappe.throw(_("Payment Request has no Provider Account"))
 
 	attempt = resolve_or_create_legacy_attempt(pr.name)
 	provider_reference = attempt.provider_payment_reference or pr.provider_reference
-	provider_instance = get_provider_instance(pr.provider)
+	provider_instance = get_provider_instance(pr.provider, provider_account=pr.provider_account)
 	provider_instance.validate_configuration()
 	payload = provider_instance.build_verification_payload(provider_reference)
-	client = get_client(provider_instance.get_provider_code(), provider_instance.provider_doc)
+	client = get_client(
+		provider_instance.get_provider_code(),
+		provider_instance.provider_doc,
+		provider_instance.provider_account,
+	)
 	url = f"{provider_instance.get_base_url()}/v1/merchant/transactions/query?{urlparse.urlencode(payload)}"
 	response = client.get(url)
 	parsed = provider_instance.parse_verification_response(response)
@@ -39,7 +44,11 @@ def verify_transaction(payment_request_name):
 
 	txn_ref = parsed.get("transaction_reference") or parsed.get("provider_reference")
 	prov_ref = parsed.get("provider_reference")
-	txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"transaction_reference": txn_ref}, "name") if txn_ref else None
+	txn_name = (
+		frappe.db.get_value("EdgePay Payment Transaction", {"transaction_reference": txn_ref}, "name")
+		if txn_ref
+		else None
+	)
 	if not txn_name and prov_ref:
 		txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"provider_reference": prov_ref}, "name")
 	txn = frappe.get_doc("EdgePay Payment Transaction", txn_name) if txn_name else frappe.new_doc("EdgePay Payment Transaction")
@@ -74,9 +83,21 @@ def verify_transaction(payment_request_name):
 
 	totals = sync_payment_totals(pr.name)
 	from edgepayv1.edgepay.services.connectors import notify_source_payment_status
+
 	notify_source_payment_status(pr.name, txn.name, event_source="verification")
 	pr.reload()
-	return {"payment_request": pr.name, "payment_attempt": attempt.name, "request_status": pr.status, "transaction": txn.name, "transaction_status": txn.status, "provider_reference": prov_ref, "amount": txn.amount, "currency": txn.currency, "paid_on": txn.paid_on, "totals": totals}
+	return {
+		"payment_request": pr.name,
+		"payment_attempt": attempt.name,
+		"request_status": pr.status,
+		"transaction": txn.name,
+		"transaction_status": txn.status,
+		"provider_reference": prov_ref,
+		"amount": txn.amount,
+		"currency": txn.currency,
+		"paid_on": txn.paid_on,
+		"totals": totals,
+	}
 
 
 @frappe.whitelist()
