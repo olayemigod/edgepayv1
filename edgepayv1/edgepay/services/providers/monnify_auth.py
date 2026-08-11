@@ -15,8 +15,8 @@ def get_monnify_token(provider_doc, provider_account):
 	if not is_live_call_allowed(provider_doc, provider_account):
 		frappe.throw(_("Live external calls are disabled or the selected Provider Account is not ready"))
 
-	api_key = provider_account.get_password("api_key")
-	secret_key = provider_account.get_password("secret_key")
+	api_key = provider_account.get_password("api_key", raise_exception=False)
+	secret_key = provider_account.get_password("secret_key", raise_exception=False)
 	if not api_key or not secret_key:
 		frappe.throw(_("API Key or Secret Key is missing in Monnify Provider Account"))
 
