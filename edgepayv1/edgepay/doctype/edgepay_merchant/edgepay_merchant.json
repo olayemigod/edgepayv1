@@ -9,6 +9,7 @@
  "field_order": [
   "merchant_name", "public_id", "status", "onboarding_status", "verification_status", "live_payments_allowed",
   "identity_section", "legal_name", "trading_name", "email", "phone", "country", "default_currency", "website", "registered_address",
+  "branding_section", "checkout_logo", "checkout_primary_colour", "checkout_message", "checkout_support_email",
   "verification_section", "latest_verification", "verified_on", "verified_by",
   "integration_section", "external_platform", "external_tenant_reference"
  ],
@@ -28,6 +29,11 @@
   {"fieldname":"default_currency","fieldtype":"Link","label":"Default Currency","options":"Currency"},
   {"fieldname":"website","fieldtype":"Data","label":"Website"},
   {"fieldname":"registered_address","fieldtype":"Small Text","label":"Registered Business Address"},
+  {"fieldname":"branding_section","fieldtype":"Section Break","label":"Hosted Checkout Branding","collapsible":1},
+  {"fieldname":"checkout_logo","fieldtype":"Attach Image","label":"Checkout Logo"},
+  {"fieldname":"checkout_primary_colour","fieldtype":"Data","label":"Checkout Primary Colour","description":"Six-digit hex colour such as #111827"},
+  {"fieldname":"checkout_message","fieldtype":"Small Text","label":"Checkout Message","description":"Short customer-facing trust or support message shown on hosted checkout"},
+  {"fieldname":"checkout_support_email","fieldtype":"Data","label":"Checkout Support Email","options":"Email"},
   {"fieldname":"verification_section","fieldtype":"Section Break","label":"Verification","collapsible":1},
   {"fieldname":"latest_verification","fieldtype":"Link","label":"Latest Verification","options":"EdgePay Merchant Verification","read_only":1},
   {"fieldname":"verified_on","fieldtype":"Datetime","label":"Verified On","read_only":1},
