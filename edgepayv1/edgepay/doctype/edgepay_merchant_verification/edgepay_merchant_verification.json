@@ -1,0 +1,51 @@
+{
+ "doctype": "DocType",
+ "name": "EdgePay Merchant Verification",
+ "module": "EdgePay",
+ "autoname": "format:MV-{merchant}-{#####}",
+ "track_changes": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "merchant", "verification_type", "status", "submitted_on", "reviewed_on", "reviewed_by",
+  "identity_section", "business_registration_number", "tax_identification_number", "business_type",
+  "registered_address", "website", "representative_name", "representative_email", "representative_phone",
+  "representative_role", "masked_identity_reference", "provider_verification_reference",
+  "evidence_section", "registration_document", "tax_document", "address_document", "representative_identity_document",
+  "review_section", "risk_rating", "review_notes", "rejection_reason", "expires_on"
+ ],
+ "fields": [
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"verification_type","fieldtype":"Select","label":"Verification Type","options":"Initial Onboarding\nPeriodic Review\nProvider Reverification\nRisk Review","default":"Initial Onboarding","reqd":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Verification Status","options":"Draft\nSubmitted\nUnder Review\nMore Information Required\nVerified\nRejected\nExpired\nRevoked","default":"Draft","reqd":1,"search_index":1},
+  {"fieldname":"submitted_on","fieldtype":"Datetime","label":"Submitted On","read_only":1},
+  {"fieldname":"reviewed_on","fieldtype":"Datetime","label":"Reviewed On","read_only":1},
+  {"fieldname":"reviewed_by","fieldtype":"Link","label":"Reviewed By","options":"User","read_only":1},
+  {"fieldname":"identity_section","fieldtype":"Section Break","label":"Business and Representative Information"},
+  {"fieldname":"business_registration_number","fieldtype":"Data","label":"CAC / Business Registration Number","search_index":1},
+  {"fieldname":"tax_identification_number","fieldtype":"Data","label":"Tax Identification Number"},
+  {"fieldname":"business_type","fieldtype":"Select","label":"Business Type","options":"Sole Proprietorship\nPartnership\nLimited Liability Company\nPublic Company\nNonprofit\nGovernment\nOther"},
+  {"fieldname":"registered_address","fieldtype":"Small Text","label":"Registered Business Address"},
+  {"fieldname":"website","fieldtype":"Data","label":"Website"},
+  {"fieldname":"representative_name","fieldtype":"Data","label":"Authorised Representative Name"},
+  {"fieldname":"representative_email","fieldtype":"Data","label":"Authorised Representative Email","options":"Email"},
+  {"fieldname":"representative_phone","fieldtype":"Data","label":"Authorised Representative Phone"},
+  {"fieldname":"representative_role","fieldtype":"Data","label":"Authorised Representative Role"},
+  {"fieldname":"masked_identity_reference","fieldtype":"Data","label":"Masked Identity Reference","description":"Store only a masked reference, never a raw BVN or NIN"},
+  {"fieldname":"provider_verification_reference","fieldtype":"Data","label":"Provider Verification Reference","search_index":1},
+  {"fieldname":"evidence_section","fieldtype":"Section Break","label":"Verification Evidence"},
+  {"fieldname":"registration_document","fieldtype":"Attach","label":"Registration Document"},
+  {"fieldname":"tax_document","fieldtype":"Attach","label":"Tax Document"},
+  {"fieldname":"address_document","fieldtype":"Attach","label":"Proof of Address"},
+  {"fieldname":"representative_identity_document","fieldtype":"Attach","label":"Representative Identity Document"},
+  {"fieldname":"review_section","fieldtype":"Section Break","label":"Review Decision"},
+  {"fieldname":"risk_rating","fieldtype":"Select","label":"Risk Rating","options":"Low\nMedium\nHigh\nProhibited"},
+  {"fieldname":"review_notes","fieldtype":"Long Text","label":"Review Notes"},
+  {"fieldname":"rejection_reason","fieldtype":"Small Text","label":"Rejection / Additional Information Reason"},
+  {"fieldname":"expires_on","fieldtype":"Date","label":"Verification Expires On"}
+ ],
+ "permissions": [
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"write":1,"create":1,"report":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
+}

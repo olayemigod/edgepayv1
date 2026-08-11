@@ -29,12 +29,12 @@
    "unique": 1
   },
   {
+   "description": "Short code name of provider, e.g., 'monnify', 'paystack'",
    "fieldname": "provider_code",
    "fieldtype": "Data",
    "label": "Provider Code",
    "reqd": 1,
-   "unique": 1,
-   "description": "Short code name of provider, e.g., 'monnify', 'paystack'"
+   "unique": 1
   },
   {
    "default": "0",
@@ -63,10 +63,10 @@
    "options": "Active\nInactive\nDeprecated"
   },
   {
+   "description": "API Base endpoint URL for this provider",
    "fieldname": "base_url",
    "fieldtype": "Data",
-   "label": "Base URL",
-   "description": "API Base endpoint URL for this provider"
+   "label": "Base URL"
   },
   {
    "fieldname": "api_key",
@@ -79,10 +79,10 @@
    "label": "Secret Key"
   },
   {
+   "description": "Provider contract code, e.g. Monnify contract code",
    "fieldname": "contract_code",
    "fieldtype": "Data",
-   "label": "Contract Code",
-   "description": "Provider contract code, e.g. Monnify contract code"
+   "label": "Contract Code"
   },
   {
    "fieldname": "capabilities_section",
@@ -116,7 +116,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-11 11:32:00",
+ "modified": "2026-07-31 18:23:00.000000",
  "modified_by": "Administrator",
  "module": "EdgePay",
  "name": "EdgePay Provider",
@@ -135,26 +135,6 @@
    "role": "EdgePay Admin",
    "share": 1,
    "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "EdgePay Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "read": 1,
-   "role": "EdgePay User"
-  },
-  {
-   "read": 1,
-   "role": "EdgePay Auditor"
   }
  ],
  "row_format": "Dynamic",

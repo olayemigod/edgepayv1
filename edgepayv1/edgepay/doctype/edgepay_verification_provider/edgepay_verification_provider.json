@@ -1,0 +1,19 @@
+{
+ "doctype":"DocType","name":"EdgePay Verification Provider","module":"EdgePay","autoname":"field:provider_name","track_changes":1,"engine":"InnoDB",
+ "field_order":["provider_name","provider_code","adapter_path","enabled","environment","supported_checks","configuration_section","base_url","api_key","secret_key","webhook_secret","retention_days"],
+ "fields":[
+  {"fieldname":"provider_name","fieldtype":"Data","label":"Provider Name","reqd":1,"unique":1},
+  {"fieldname":"provider_code","fieldtype":"Data","label":"Provider Code","reqd":1,"unique":1,"search_index":1},
+  {"fieldname":"adapter_path","fieldtype":"Data","label":"Adapter Path","reqd":1},
+  {"fieldname":"enabled","fieldtype":"Check","label":"Enabled","default":"0"},
+  {"fieldname":"environment","fieldtype":"Select","label":"Environment","options":"Sandbox\nLive","default":"Sandbox","reqd":1},
+  {"fieldname":"supported_checks","fieldtype":"Small Text","label":"Supported Checks","description":"Comma-separated values such as NIN,BVN,LIVENESS,FACE_MATCH"},
+  {"fieldname":"configuration_section","fieldtype":"Section Break","label":"Secure Configuration"},
+  {"fieldname":"base_url","fieldtype":"Data","label":"Base URL"},
+  {"fieldname":"api_key","fieldtype":"Password","label":"API Key"},
+  {"fieldname":"secret_key","fieldtype":"Password","label":"Secret Key"},
+  {"fieldname":"webhook_secret","fieldtype":"Password","label":"Webhook Secret"},
+  {"fieldname":"retention_days","fieldtype":"Int","label":"Temporary Evidence Retention Days","default":"7"}
+ ],
+ "permissions":[{"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1}]
+}
