@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import frappe
 from frappe import _
 from frappe.utils import flt
@@ -13,15 +12,17 @@ from edgepayv1.edgepay.services.providers.registry import get_provider_instance
 def check_and_mark_expired(pr, save=True):
 	if pr.expires_on:
 		from frappe.utils import get_datetime, now_datetime
+
 		if now_datetime() > get_datetime(pr.expires_on):
 			if pr.status not in ["Paid", "Cancelled", "Expired", "Refunded"]:
 				if save:
 					transition_request(pr, "Expired", "Payment Request Expired", "expiry")
 					try:
 						from edgepayv1.edgepay.services.connectors import notify_source_payment_status
+
 						notify_source_payment_status(pr.name, event_source="expiry")
 					except Exception as exc:
-						log(f"Failed to dispatch expiry status handoff for {pr.name}: {str(exc)}", level="error")
+						log(f"Failed to dispatch expiry status handoff for {pr.name}: {exc}", level="error")
 				return True
 			if pr.status == "Expired":
 				return True
@@ -29,7 +30,12 @@ def check_and_mark_expired(pr, save=True):
 
 
 def _get_reusable_attempt(pr):
-	name = frappe.db.get_value("EdgePay Payment Attempt", {"payment_request": pr.name, "status": ["in", ["Initiated", "Pending"]], "checkout_url": ["is", "set"]}, "name", order_by="attempt_number desc")
+	name = frappe.db.get_value(
+		"EdgePay Payment Attempt",
+		{"payment_request": pr.name, "status": ["in", ["Initiated", "Pending"]], "checkout_url": ["is", "set"]},
+		"name",
+		order_by="attempt_number desc",
+	)
 	return frappe.get_doc("EdgePay Payment Attempt", name) if name else None
 
 
@@ -39,6 +45,8 @@ def initialize_checkout(payment_request_name, payment_method=None):
 		frappe.throw(_("Cannot initialize checkout for an expired Payment Request"))
 	if pr.status in ["Paid", "Overpaid", "Refund Pending", "Partly Refunded", "Refunded", "Expired", "Cancelled", "Disputed", "Chargeback"]:
 		frappe.throw(_("Cannot initialize checkout for a Payment Request with status: {0}").format(pr.status))
+	if not pr.provider_account:
+		frappe.throw(_("Payment Request has no Provider Account"))
 
 	reusable = _get_reusable_attempt(pr)
 	if reusable:
@@ -47,11 +55,11 @@ def initialize_checkout(payment_request_name, payment_method=None):
 		frappe.throw(_("Payment amount must be greater than zero to initialize checkout"))
 
 	attempt = create_attempt(pr.name, payment_method=payment_method, expires_on=pr.expires_on)
-	provider_instance = get_provider_instance(pr.provider)
+	provider_instance = get_provider_instance(pr.provider, provider_account=pr.provider_account)
 	provider_instance.validate_configuration()
 	payload = provider_instance.build_checkout_payload(pr)
 	provider_code = provider_instance.get_provider_code()
-	client = get_client(provider_code, provider_instance.provider_doc)
+	client = get_client(provider_code, provider_instance.provider_doc, provider_instance.provider_account)
 	base_url = provider_instance.get_base_url()
 	log(f"Initializing checkout for {pr.name}, attempt {attempt.name}, via provider {provider_code}", level="info")
 
@@ -62,7 +70,7 @@ def initialize_checkout(payment_request_name, payment_method=None):
 		attempt.failure_message = str(exc)
 		attempt.save(ignore_permissions=True)
 		transition_attempt(attempt, "Failed", "Checkout Initialisation Failed", "checkout", details={"error": str(exc)})
-		log(f"Checkout initialization failed for {pr.name}: {str(exc)}", level="error")
+		log(f"Checkout initialization failed for {pr.name}: {exc}", level="error")
 		raise
 
 	attempt.checkout_url = parsed_response.get("checkout_url")
@@ -84,9 +92,10 @@ def initialize_checkout(payment_request_name, payment_method=None):
 
 	try:
 		from edgepayv1.edgepay.services.connectors import notify_source_payment_status
+
 		notify_source_payment_status(pr.name, event_source="checkout")
 	except Exception as exc:
-		log(f"Failed to dispatch checkout status handoff for {pr.name}: {str(exc)}", level="error")
+		log(f"Failed to dispatch checkout status handoff for {pr.name}: {exc}", level="error")
 
 	return {"status": pr.status, "attempt": attempt.name, "checkout_url": attempt.checkout_url, "provider_reference": attempt.provider_payment_reference}
 
