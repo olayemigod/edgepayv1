@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import json
 
 import frappe
@@ -25,6 +24,24 @@ def _failure(event_doc, message):
 	return {"status": "failed", "event": event_doc.name, "processing_status": "Failed", "duplicate": False}
 
 
+def _resolve_webhook_payment_request(provider, payload):
+	payment_ref = provider.get_webhook_payment_reference(payload)
+	provider_ref = provider.get_webhook_transaction_reference(payload)
+	from edgepayv1.edgepay.services.api import resolve_payment_request_by_ref
+
+	pr_name = resolve_payment_request_by_ref(payment_ref) if payment_ref else None
+	if not pr_name and provider_ref:
+		row = frappe.db.get_value(
+			"EdgePay External Reference",
+			{"reference_value": provider_ref, "active": 1},
+			"payment_request",
+		)
+		pr_name = row or frappe.db.get_value(
+			"EdgePay Payment Request", {"provider_reference": provider_ref}, "name"
+		)
+	return pr_name, payment_ref, provider_ref
+
+
 def process_webhook_event(provider_code, headers, raw_body):
 	provider_name = frappe.db.get_value("EdgePay Provider", {"provider_code": provider_code}, "name")
 	if not provider_name:
@@ -32,7 +49,8 @@ def process_webhook_event(provider_code, headers, raw_body):
 	provider_doc = frappe.get_doc("EdgePay Provider", provider_name)
 	if not provider_doc.enabled:
 		frappe.throw(_("Provider is disabled"))
-	provider = get_provider_instance(provider_doc)
+
+	provider_parser = get_provider_instance(provider_doc)
 	try:
 		payload = json.loads(raw_body.decode("utf-8") if isinstance(raw_body, bytes) else raw_body)
 	except Exception:
@@ -40,12 +58,22 @@ def process_webhook_event(provider_code, headers, raw_body):
 	if not isinstance(payload, dict):
 		frappe.throw(_("Webhook payload must be a JSON object"))
 
-	event_ref = provider.get_webhook_event_reference(payload)
+	event_ref = provider_parser.get_webhook_event_reference(payload)
 	if not event_ref:
 		frappe.throw(_("Webhook event has no unique event identifier"))
-	existing = frappe.db.get_value("EdgePay Webhook Event", {"provider": provider_doc.name, "event_reference": event_ref}, ["name", "processing_status"], as_dict=True)
+	existing = frappe.db.get_value(
+		"EdgePay Webhook Event",
+		{"provider": provider_doc.name, "event_reference": event_ref},
+		["name", "processing_status"],
+		as_dict=True,
+	)
 	if existing:
-		return {"status": "success", "event": existing.name, "processing_status": existing.processing_status, "duplicate": True}
+		return {
+			"status": "success",
+			"event": existing.name,
+			"processing_status": existing.processing_status,
+			"duplicate": True,
+		}
 
 	event_doc = frappe.new_doc("EdgePay Webhook Event")
 	event_doc.provider = provider_doc.name
@@ -53,6 +81,20 @@ def process_webhook_event(provider_code, headers, raw_body):
 	event_doc.event_reference = event_ref
 	event_doc.received_on = frappe.utils.now_datetime()
 	event_doc.payload_json = json.dumps(redact_secrets(payload), indent=2)
+
+	pr_name, payment_ref, provider_ref = _resolve_webhook_payment_request(provider_parser, payload)
+	if not pr_name:
+		return _failure(event_doc, "Payment Request not resolved")
+	pr = frappe.get_doc("EdgePay Payment Request", pr_name)
+	if pr.provider != provider_doc.name:
+		return _failure(event_doc, "Webhook Provider does not match Payment Request Provider")
+	if not pr.provider_account:
+		return _failure(event_doc, "Payment Request has no Provider Account")
+
+	event_doc.merchant = pr.merchant
+	event_doc.provider_account = pr.provider_account
+	event_doc.linked_payment_request = pr.name
+	provider = get_provider_instance(provider_doc, provider_account=pr.provider_account)
 	event_doc.signature_valid = 1 if provider.verify_webhook_signature(raw_body, headers) else 0
 	if not event_doc.signature_valid:
 		return _failure(event_doc, "Webhook signature validation failed")
@@ -61,16 +103,6 @@ def process_webhook_event(provider_code, headers, raw_body):
 	status = parsed.get("status") if isinstance(parsed, dict) else None
 	if status not in ALLOWED_TRANSACTION_STATUSES:
 		return _failure(event_doc, "Unsupported normalized payment status")
-	payment_ref = provider.get_webhook_payment_reference(payload)
-	provider_ref = provider.get_webhook_transaction_reference(payload)
-	from edgepayv1.edgepay.services.api import resolve_payment_request_by_ref
-	pr_name = resolve_payment_request_by_ref(payment_ref) if payment_ref else None
-	if not pr_name and provider_ref:
-		row = frappe.db.get_value("EdgePay External Reference", {"reference_value": provider_ref, "active": 1}, "payment_request")
-		pr_name = row or frappe.db.get_value("EdgePay Payment Request", {"provider_reference": provider_ref}, "name")
-	if not pr_name:
-		return _failure(event_doc, "Payment Request not resolved")
-	pr = frappe.get_doc("EdgePay Payment Request", pr_name)
 	parsed_amount = flt(parsed.get("amount") or pr.amount)
 	if parsed_amount <= 0 or parsed_amount > flt(pr.amount):
 		return _failure(event_doc, "Invalid payment amount")
@@ -79,10 +111,18 @@ def process_webhook_event(provider_code, headers, raw_body):
 
 	txn_ref = parsed.get("transaction_reference") or parsed.get("provider_reference")
 	prov_ref = parsed.get("provider_reference")
-	attempt = resolve_attempt(pr.name, provider_payment_reference=prov_ref or payment_ref, provider_transaction_reference=txn_ref or provider_ref)
+	attempt = resolve_attempt(
+		pr.name,
+		provider_payment_reference=prov_ref or payment_ref,
+		provider_transaction_reference=txn_ref or provider_ref,
+	)
 	if not attempt:
 		attempt = resolve_or_create_legacy_attempt(pr.name)
-	txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"transaction_reference": txn_ref}, "name") if txn_ref else None
+	txn_name = (
+		frappe.db.get_value("EdgePay Payment Transaction", {"transaction_reference": txn_ref}, "name")
+		if txn_ref
+		else None
+	)
 	if not txn_name and prov_ref:
 		txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"provider_reference": prov_ref}, "name")
 	txn = frappe.get_doc("EdgePay Payment Transaction", txn_name) if txn_name else frappe.new_doc("EdgePay Payment Transaction")
@@ -116,21 +156,30 @@ def process_webhook_event(provider_code, headers, raw_body):
 	elif status == "Pending" and attempt.status == "Initiated":
 		transition_attempt(attempt, "Pending", "Webhook Payment Pending", "webhook", txn, {"event_reference": event_ref})
 	elif status == "Refunded":
-		refund_name = frappe.db.get_value("EdgePay Refund Request", {"payment_transaction": txn.name, "status": ["in", ["Approved", "Submitted", "Processing"]]}, "name")
+		refund_name = frappe.db.get_value(
+			"EdgePay Refund Request",
+			{"payment_transaction": txn.name, "status": ["in", ["Approved", "Submitted", "Processing"]]},
+			"name",
+		)
 		if refund_name:
 			from edgepayv1.edgepay.services.refund_processing import complete_refund
+
 			complete_refund(refund_name, provider_reference=prov_ref or txn_ref)
 
 	totals = sync_payment_totals(pr.name)
 	from edgepayv1.edgepay.services.connectors import notify_source_payment_status
+
 	notify_source_payment_status(pr.name, txn.name, event_source="webhook")
-	event_doc.merchant = pr.merchant
-	event_doc.provider_account = pr.provider_account
-	event_doc.linked_payment_request = pr.name
 	event_doc.linked_payment_transaction = txn.name
 	event_doc.processing_status = "Processed"
 	event_doc.insert(ignore_permissions=True)
-	return {"status": "success", "event": event_doc.name, "processing_status": "Processed", "duplicate": False, "totals": totals}
+	return {
+		"status": "success",
+		"event": event_doc.name,
+		"processing_status": "Processed",
+		"duplicate": False,
+		"totals": totals,
+	}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -142,9 +191,17 @@ def process_provider_webhook(provider_code):
 		headers = request.headers if request is not None else {}
 		validate_webhook_body(raw_body)
 		result = process_webhook_event(provider_code, headers, raw_body)
-		return {"status": result.get("status"), "event": result.get("event"), "processing_status": result.get("processing_status"), "duplicate": result.get("duplicate", False)}
+		return {
+			"status": result.get("status"),
+			"event": result.get("event"),
+			"processing_status": result.get("processing_status"),
+			"duplicate": result.get("duplicate", False),
+		}
 	except Exception as exc:
-		frappe.log_error(f"EdgePay Webhook Exception: {redact_secrets(str(exc))}", "EdgePay Webhook Error")
+		frappe.log_error(
+			f"EdgePay Webhook Exception: {redact_secrets(str(exc))}",
+			"EdgePay Webhook Error",
+		)
 		if not frappe.local.response.get("http_status_code"):
 			frappe.local.response["http_status_code"] = 400
 		return {"status": "failed", "message": "An error occurred during webhook processing"}
