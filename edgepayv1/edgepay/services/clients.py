@@ -115,4 +115,6 @@ def is_live_call_allowed(provider_doc, provider_account=None):
 		return False
 	if not provider_account.enabled or provider_account.status != "Active":
 		return False
-	return bool(provider_account.get_password("api_key") and provider_account.get_password("secret_key"))
+	api_key = provider_account.get_password("api_key", raise_exception=False)
+	secret_key = provider_account.get_password("secret_key", raise_exception=False)
+	return bool(api_key and secret_key)
