@@ -14,15 +14,18 @@ class MonnifyProvider(BaseProvider):
 			frappe.throw(_("Merchant Provider Account is required for Monnify payment operations"))
 		return account
 
+	def _password(self, fieldname):
+		return self._credentials().get_password(fieldname, raise_exception=False)
+
 	def validate_configuration(self):
 		account = self.get_credentials_doc()
 		if not account:
 			return
 		if not account.enabled or account.status != "Active":
 			frappe.throw(_("The selected Monnify Provider Account is not active"))
-		if not account.get_password("api_key"):
+		if not self._password("api_key"):
 			frappe.throw(_("API Key / Public Key is missing in Monnify Provider Account"))
-		if not account.get_password("secret_key"):
+		if not self._password("secret_key"):
 			frappe.throw(_("Secret Key is missing in Monnify Provider Account"))
 		settings = frappe.get_doc("EdgePay Settings")
 		if getattr(settings, "allow_external_http_calls", 0) and not account.contract_code:
@@ -77,11 +80,10 @@ class MonnifyProvider(BaseProvider):
 		}
 
 	def verify_webhook_signature(self, payload, headers):
-		account = self._credentials()
 		signature = headers.get("monnify-signature") or headers.get("Monnify-Signature")
 		if not signature:
 			return False
-		secret_key = account.get_password("webhook_token") or account.get_password("secret_key")
+		secret_key = self._password("webhook_token") or self._password("secret_key")
 		if not secret_key:
 			return False
 		msg = payload.encode() if isinstance(payload, str) else payload
