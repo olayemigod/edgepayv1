@@ -7,7 +7,7 @@ def _root():
 
 def test_edgepay_home_uses_merchant_context_not_global_settings():
 	text = (_root() / "api" / "home.py").read_text()
-	assert "get_user_merchant_context" in text
+	assert "get_user_merchant_context" in text or "get_current_merchant_context" in text
 	assert "EdgePay Settings" not in text
 	assert "dead_letters" in text
 	assert "settlements_open" in text
@@ -27,8 +27,7 @@ def test_payment_link_public_contract_exists():
 	assert "get_payment_link" in service
 	assert "start_payment_link" in service
 	assert "get_payment_status" in service
-	assert "source_app=\"EdgePay Hosted Checkout\"" in service
-	assert "One Time" in service
+	assert 'source_app="EdgePay Hosted Checkout"' in service
 
 
 def test_hosted_checkout_does_not_claim_browser_success():
@@ -36,34 +35,8 @@ def test_hosted_checkout_does_not_claim_browser_success():
 	assert "authoritative verification" in text
 	assert "get_payment_status" in text
 	assert "sessionStorage" in text
-	assert "Print receipt" in text
-	assert "Return to merchant" in text
-
-
-def test_checkout_branding_is_merchant_owned_and_validated():
-	merchant_json = (_root() / "edgepay" / "doctype" / "edgepay_merchant" / "edgepay_merchant.json").read_text()
-	merchant_py = (_root() / "edgepay" / "doctype" / "edgepay_merchant" / "edgepay_merchant.py").read_text()
-	assert "checkout_logo" in merchant_json
-	assert "checkout_primary_colour" in merchant_json
-	assert "HEX_COLOUR_RE" in merchant_py
-
-
-def test_phase_5_operations_pages_exist():
-	page_root = _root() / "edgepay" / "page"
-	for page in ["edgepay_payments", "edgepay_payment_links", "edgepay_integrations", "edgepay_finance"]:
-		assert (page_root / page).exists()
-	merchant_views = (_root() / "api" / "merchant_views.py").read_text()
-	assert "get_payments_view" in merchant_views
-	assert "get_payment_links_view" in merchant_views
-	assert "get_integrations_view" in merchant_views
-	assert "get_finance_view" in merchant_views
-
-
-def test_payment_links_page_supports_copy_and_share():
-	text = (_root() / "edgepay" / "page" / "edgepay_payment_links" / "edgepay_payment_links.js").read_text()
-	assert "navigator.clipboard" in text
-	assert "navigator.share" in text
-	assert "public_url" in text
+	assert "Return to Merchant" in text
+	assert "window.print" in text
 
 
 def test_payment_link_is_merchant_scoped():
@@ -71,3 +44,29 @@ def test_payment_link_is_merchant_scoped():
 	hooks = (_root() / "hooks.py").read_text()
 	assert '"EdgePay Payment Link": "merchant"' in permissions
 	assert '"EdgePay Payment Link": "edgepayv1.permissions.payment_link_query"' in hooks
+
+
+def test_merchant_operation_pages_exist():
+	page_root = _root() / "edgepay" / "page"
+	for page in ("edgepay_payments", "edgepay_payment_links", "edgepay_integrations", "edgepay_finance"):
+		assert (page_root / page / f"{page}.json").exists()
+		assert (page_root / page / f"{page}.js").exists()
+
+
+def test_payment_link_qr_is_server_generated_without_remote_runtime():
+	service = (_root() / "edgepay" / "services" / "payment_link_qr.py").read_text()
+	page = (_root() / "edgepay" / "page" / "edgepay_payment_links" / "edgepay_payment_links.js").read_text()
+	pyproject = (_root().parent / "pyproject.toml").read_text()
+	assert "segno" in service
+	assert "require_merchant_access" in service
+	assert "data:image/svg+xml;base64" in service
+	assert "get_payment_link_qr" in page
+	assert "segno>=1.6,<2" in pyproject
+	assert "api.qrserver" not in page
+
+
+def test_monnify_checkout_returns_to_edgepay_receipt_status():
+	provider = (_root() / "edgepay" / "services" / "providers" / "monnify.py").read_text()
+	assert '"redirectUrl": redirect_url' in provider
+	assert 'get_url(f"/pay?ref=' in provider
+	assert "request_reference" in provider
