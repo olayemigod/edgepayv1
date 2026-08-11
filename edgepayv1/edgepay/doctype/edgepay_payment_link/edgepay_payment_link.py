@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt, get_datetime, now_datetime
+from urllib.parse import urlparse
 
 
 class EdgePayPaymentLink(Document):
@@ -20,9 +21,12 @@ class EdgePayPaymentLink(Document):
 			frappe.throw(_("Provider Account does not belong to the selected Merchant"))
 		if self.amount_mode == "Fixed" and flt(self.amount) <= 0:
 			frappe.throw(_("Fixed Payment Links require an amount greater than zero"))
-		if self.amount_mode == "Customer Entered":
-			if self.minimum_amount and self.maximum_amount and flt(self.minimum_amount) > flt(self.maximum_amount):
-				frappe.throw(_("Minimum Amount cannot exceed Maximum Amount"))
+		if self.amount_mode == "Customer Entered" and self.minimum_amount and self.maximum_amount and flt(self.minimum_amount) > flt(self.maximum_amount):
+			frappe.throw(_("Minimum Amount cannot exceed Maximum Amount"))
+		if self.redirect_url:
+			parsed = urlparse(self.redirect_url)
+			if parsed.scheme != "https" or not parsed.netloc:
+				frappe.throw(_("Return URL must be an absolute HTTPS URL"))
 		if self.expires_on and get_datetime(self.expires_on) <= now_datetime() and self.status == "Active":
 			self.status = "Expired"
 		if self.is_new():
