@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import frappe
 
 
@@ -10,7 +9,9 @@ class DatabaseStateBackup(object):
 
 	def backup(self):
 		# 1. Backup any existing monnify providers
-		providers = frappe.get_all("EdgePay Provider", filters={"provider_code": "monnify"}, fields=["name"])
+		providers = frappe.get_all(
+			"EdgePay Provider", filters={"provider_code": "monnify"}, fields=["name"]
+		)
 		for p in providers:
 			try:
 				doc = frappe.get_doc("EdgePay Provider", p.name)
