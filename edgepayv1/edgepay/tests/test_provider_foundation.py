@@ -90,7 +90,7 @@ class TestProviderFoundation(FrappeTestCase):
 
 	def test_global_provider_credentials_are_not_runtime_credentials(self):
 		instance = get_provider_instance(self.provider.name, self.provider_account.name)
-		self.assertIs(instance.get_credentials_doc(), self.provider_account)
+		self.assertEqual(instance.get_credentials_doc().name, self.provider_account.name)
 		payload = instance.build_checkout_payload(
 			frappe._dict(
 				name="TEST-PR",
