@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import frappe
 
+
 class DatabaseStateBackup(object):
 	def __init__(self):
 		self.saved_providers = []
@@ -61,3 +62,58 @@ class DatabaseStateBackup(object):
 					frappe.db.commit()
 			except Exception:
 				pass
+
+
+def create_test_merchant_provider_account(
+	provider,
+	merchant_name,
+	api_key="test_api_key",
+	secret_key="test_secret_key",
+	contract_code="test_contract_code",
+	webhook_token=None,
+):
+	"""Create an isolated sandbox Merchant and active Provider Account for legacy payment tests."""
+	if frappe.db.exists("EdgePay Merchant", merchant_name):
+		merchant = frappe.get_doc("EdgePay Merchant", merchant_name)
+	else:
+		merchant = frappe.get_doc(
+			{
+				"doctype": "EdgePay Merchant",
+				"merchant_name": merchant_name,
+				"status": "Active",
+				"legal_name": merchant_name,
+				"email": "edgepay-tests@example.com",
+				"country": "Nigeria",
+				"default_currency": "NGN",
+			}
+		).insert(ignore_permissions=True)
+
+	frappe.db.delete(
+		"EdgePay Provider Account",
+		{"merchant": merchant.name, "provider": provider, "environment": "Sandbox"},
+	)
+	account = frappe.get_doc(
+		{
+			"doctype": "EdgePay Provider Account",
+			"merchant": merchant.name,
+			"provider": provider,
+			"account_label": "Test Primary",
+			"environment": "Sandbox",
+			"enabled": 1,
+			"status": "Active",
+			"api_key": api_key,
+			"secret_key": secret_key,
+			"contract_code": contract_code,
+			"webhook_token": webhook_token,
+		}
+	).insert(ignore_permissions=True)
+	return merchant, account
+
+
+def cleanup_test_merchant_provider_account(merchant, provider):
+	"""Remove only the isolated merchant/provider-account fixtures created by tests."""
+	if merchant:
+		merchant_name = merchant.name if hasattr(merchant, "name") else merchant
+		frappe.db.delete("EdgePay Provider Account", {"merchant": merchant_name, "provider": provider})
+		frappe.db.delete("EdgePay Merchant User", {"merchant": merchant_name})
+		frappe.db.delete("EdgePay Merchant", merchant_name)
