@@ -39,7 +39,7 @@ def get_payment_totals(payment_request_name):
 	}
 
 
-def sync_payment_request_totals(payment_request_name):
+def sync_payment_totals(payment_request_name):
 	request = frappe.get_doc("EdgePay Payment Request", payment_request_name)
 	totals = get_payment_totals(payment_request_name)
 	request.paid_amount = totals["net_paid_amount"]
@@ -51,3 +51,7 @@ def sync_payment_request_totals(payment_request_name):
 		request.status = totals["derived_status"]
 	request.save(ignore_permissions=True)
 	return totals
+
+
+# Compatibility alias for callers that adopted the earlier descriptive name.
+sync_payment_request_totals = sync_payment_totals
