@@ -8,7 +8,7 @@ from frappe.utils import now_datetime
 from edgepayv1.edgepay.services.security import redact_secrets
 
 ATTEMPT_TRANSITIONS = {
-	"Created": {"Initiated", "Cancelled", "Expired"},
+	"Created": {"Initiated", "Failed", "Cancelled", "Expired"},
 	"Initiated": {"Pending", "Successful", "Failed", "Cancelled", "Expired"},
 	"Pending": {"Successful", "Failed", "Cancelled", "Expired"},
 	"Successful": set(),
