@@ -28,6 +28,7 @@ def test_payment_link_public_contract_exists():
 	assert "start_payment_link" in service
 	assert "get_payment_status" in service
 	assert "source_app=\"EdgePay Hosted Checkout\"" in service
+	assert "One Time" in service
 
 
 def test_hosted_checkout_does_not_claim_browser_success():
@@ -35,6 +36,34 @@ def test_hosted_checkout_does_not_claim_browser_success():
 	assert "authoritative verification" in text
 	assert "get_payment_status" in text
 	assert "sessionStorage" in text
+	assert "Print receipt" in text
+	assert "Return to merchant" in text
+
+
+def test_checkout_branding_is_merchant_owned_and_validated():
+	merchant_json = (_root() / "edgepay" / "doctype" / "edgepay_merchant" / "edgepay_merchant.json").read_text()
+	merchant_py = (_root() / "edgepay" / "doctype" / "edgepay_merchant" / "edgepay_merchant.py").read_text()
+	assert "checkout_logo" in merchant_json
+	assert "checkout_primary_colour" in merchant_json
+	assert "HEX_COLOUR_RE" in merchant_py
+
+
+def test_phase_5_operations_pages_exist():
+	page_root = _root() / "edgepay" / "page"
+	for page in ["edgepay_payments", "edgepay_payment_links", "edgepay_integrations", "edgepay_finance"]:
+		assert (page_root / page).exists()
+	merchant_views = (_root() / "api" / "merchant_views.py").read_text()
+	assert "get_payments_view" in merchant_views
+	assert "get_payment_links_view" in merchant_views
+	assert "get_integrations_view" in merchant_views
+	assert "get_finance_view" in merchant_views
+
+
+def test_payment_links_page_supports_copy_and_share():
+	text = (_root() / "edgepay" / "page" / "edgepay_payment_links" / "edgepay_payment_links.js").read_text()
+	assert "navigator.clipboard" in text
+	assert "navigator.share" in text
+	assert "public_url" in text
 
 
 def test_payment_link_is_merchant_scoped():
