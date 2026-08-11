@@ -50,8 +50,14 @@ def verify_transaction(payment_request_name):
 		else None
 	)
 	if not txn_name and prov_ref:
-		txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"provider_reference": prov_ref}, "name")
-	txn = frappe.get_doc("EdgePay Payment Transaction", txn_name) if txn_name else frappe.new_doc("EdgePay Payment Transaction")
+		txn_name = frappe.db.get_value(
+			"EdgePay Payment Transaction", {"provider_reference": prov_ref}, "name"
+		)
+	txn = (
+		frappe.get_doc("EdgePay Payment Transaction", txn_name)
+		if txn_name
+		else frappe.new_doc("EdgePay Payment Transaction")
+	)
 	txn.payment_request = pr.name
 	txn.payment_attempt = attempt.name
 	txn.provider = pr.provider
@@ -70,9 +76,17 @@ def verify_transaction(payment_request_name):
 	attempt.provider_payment_reference = prov_ref or attempt.provider_payment_reference
 	attempt.save(ignore_permissions=True)
 	if prov_ref:
-		register_reference("Provider Payment", prov_ref, pr.name, payment_attempt=attempt.name, payment_transaction=txn.name)
+		register_reference(
+			"Provider Payment", prov_ref, pr.name, payment_attempt=attempt.name, payment_transaction=txn.name
+		)
 	if txn_ref:
-		register_reference("Provider Transaction", txn_ref, pr.name, payment_attempt=attempt.name, payment_transaction=txn.name)
+		register_reference(
+			"Provider Transaction",
+			txn_ref,
+			pr.name,
+			payment_attempt=attempt.name,
+			payment_transaction=txn.name,
+		)
 
 	if txn.status == "Success" and attempt.status != "Successful":
 		transition_attempt(attempt, "Successful", "Verification Successful", "verification", txn)
@@ -103,5 +117,7 @@ def verify_transaction(payment_request_name):
 @frappe.whitelist()
 def verify_payment_request_transaction(payment_request_name):
 	if not frappe.has_permission("EdgePay Payment Request", "write", doc=payment_request_name):
-		frappe.throw(_("Not permitted to verify transaction for this Payment Request"), frappe.PermissionError)
+		frappe.throw(
+			_("Not permitted to verify transaction for this Payment Request"), frappe.PermissionError
+		)
 	return verify_transaction(payment_request_name)
