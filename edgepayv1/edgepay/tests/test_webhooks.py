@@ -18,14 +18,12 @@ class TestWebhooks(FrappeTestCase):
 	def setUp(self):
 		self.db_backup = DatabaseStateBackup()
 		self.db_backup.backup()
-		super(TestWebhooks, self).setUp()
+		super().setUp()
 		clear_client_overrides()
-
 		self.settings = frappe.get_doc("EdgePay Settings")
 		self.settings.sandbox_mode = 1
 		self.settings.allow_external_http_calls = 0
 		self.settings.save()
-
 		self.provider_name = "Test Monnify Webhook Provider"
 		self.secret_key = "test_webhook_secret_key"
 		frappe.db.delete("EdgePay Provider", {"provider_code": "monnify"})
@@ -50,18 +48,15 @@ class TestWebhooks(FrappeTestCase):
 			self.provider.api_key = "test_webhook_api_key"
 			self.provider.secret_key = self.secret_key
 			self.provider.save()
-
 		self.merchant, self.provider_account = create_test_merchant_provider_account(
 			self.provider_name,
 			"Test Webhook Merchant",
 			api_key="test_webhook_api_key",
 			secret_key=self.secret_key,
 		)
-
 		self.req_ref = "REQ-WEBHOOK-TEST-001"
 		if frappe.db.exists("EdgePay Payment Request", {"request_reference": self.req_ref}):
 			frappe.db.delete("EdgePay Payment Request", {"request_reference": self.req_ref})
-
 		self.payment_request = frappe.get_doc(
 			{
 				"doctype": "EdgePay Payment Request",
@@ -77,7 +72,6 @@ class TestWebhooks(FrappeTestCase):
 				"provider_reference": "MON-REQ-WEBHOOK-TEST-001-TX",
 			}
 		).insert()
-
 		frappe.db.delete("EdgePay Webhook Event", {"provider": self.provider_name})
 		frappe.db.delete("EdgePay Payment Transaction", {"payment_request": self.payment_request.name})
 
@@ -91,7 +85,7 @@ class TestWebhooks(FrappeTestCase):
 		cleanup_test_merchant_provider_account(self.merchant, self.provider_name)
 		if frappe.db.exists("EdgePay Provider", self.provider_name):
 			frappe.db.delete("EdgePay Provider", self.provider_name)
-		super(TestWebhooks, self).tearDown()
+		super().tearDown()
 		self.db_backup.restore()
 
 	def _get_headers_and_body(self, payload):
@@ -138,7 +132,9 @@ class TestWebhooks(FrappeTestCase):
 		payload = self._get_valid_payload()
 		headers, body = self._get_headers_and_body(payload)
 		process_webhook_event("monnify", headers, body)
-		txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"payment_request": self.payment_request.name})
+		txn_name = frappe.db.get_value(
+			"EdgePay Payment Transaction", {"payment_request": self.payment_request.name}
+		)
 		self.assertTrue(txn_name)
 		txn = frappe.get_doc("EdgePay Payment Transaction", txn_name)
 		self.assertEqual(txn.status, "Success")
@@ -153,7 +149,9 @@ class TestWebhooks(FrappeTestCase):
 		res2 = process_webhook_event("monnify", headers, body)
 		self.assertTrue(res2.get("duplicate"))
 		self.assertEqual(res2["event"], res1["event"])
-		txns = frappe.get_all("EdgePay Payment Transaction", filters={"payment_request": self.payment_request.name})
+		txns = frappe.get_all(
+			"EdgePay Payment Transaction", filters={"payment_request": self.payment_request.name}
+		)
 		self.assertEqual(len(txns), 1)
 
 	def test_invalid_signature_logged_but_no_mutation(self):
@@ -166,7 +164,9 @@ class TestWebhooks(FrappeTestCase):
 		event = frappe.get_doc("EdgePay Webhook Event", res["event"])
 		self.assertEqual(event.signature_valid, 0)
 		self.assertEqual(event.processing_status, "Failed")
-		self.assertEqual(frappe.get_doc("EdgePay Payment Request", self.payment_request.name).status, "Initiated")
+		self.assertEqual(
+			frappe.get_doc("EdgePay Payment Request", self.payment_request.name).status, "Initiated"
+		)
 		self.assertFalse(
 			frappe.db.exists("EdgePay Payment Transaction", {"payment_request": self.payment_request.name})
 		)
@@ -206,7 +206,9 @@ class TestWebhooks(FrappeTestCase):
 		event = frappe.get_doc("EdgePay Webhook Event", res["event"])
 		self.assertEqual(event.processing_status, "Failed")
 		self.assertIn("amount mismatch", event.error_message.lower())
-		self.assertEqual(frappe.get_doc("EdgePay Payment Request", self.payment_request.name).status, "Initiated")
+		self.assertEqual(
+			frappe.get_doc("EdgePay Payment Request", self.payment_request.name).status, "Initiated"
+		)
 
 	def test_currency_mismatch_blocks_mutation(self):
 		payload = self._get_valid_payload(currency="USD")
@@ -216,15 +218,21 @@ class TestWebhooks(FrappeTestCase):
 		event = frappe.get_doc("EdgePay Webhook Event", res["event"])
 		self.assertEqual(event.processing_status, "Failed")
 		self.assertIn("currency mismatch", event.error_message.lower())
-		self.assertEqual(frappe.get_doc("EdgePay Payment Request", self.payment_request.name).status, "Initiated")
+		self.assertEqual(
+			frappe.get_doc("EdgePay Payment Request", self.payment_request.name).status, "Initiated"
+		)
 
 	def test_pending_webhook_does_not_mark_paid(self):
 		payload = self._get_valid_payload(status="PENDING")
 		headers, body = self._get_headers_and_body(payload)
 		res = process_webhook_event("monnify", headers, body)
 		self.assertEqual(res["status"], "success")
-		self.assertEqual(frappe.get_doc("EdgePay Payment Request", self.payment_request.name).status, "Initiated")
-		txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"payment_request": self.payment_request.name})
+		self.assertEqual(
+			frappe.get_doc("EdgePay Payment Request", self.payment_request.name).status, "Initiated"
+		)
+		txn_name = frappe.db.get_value(
+			"EdgePay Payment Transaction", {"payment_request": self.payment_request.name}
+		)
 		self.assertEqual(frappe.get_doc("EdgePay Payment Transaction", txn_name).status, "Pending")
 
 	def test_failed_webhook_does_not_downgrade_paid_request(self):
@@ -283,7 +291,7 @@ class TestWebhooks(FrappeTestCase):
 		payload = self._get_valid_payload(event_ref="EVT-GUEST")
 		headers, body = self._get_headers_and_body(payload)
 
-		class MockRequest(object):
+		class MockRequest:
 			def __init__(self, data, headers):
 				self.data = data
 				self.headers = headers
