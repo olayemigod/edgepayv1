@@ -124,8 +124,14 @@ def process_webhook_event(provider_code, headers, raw_body):
 		else None
 	)
 	if not txn_name and prov_ref:
-		txn_name = frappe.db.get_value("EdgePay Payment Transaction", {"provider_reference": prov_ref}, "name")
-	txn = frappe.get_doc("EdgePay Payment Transaction", txn_name) if txn_name else frappe.new_doc("EdgePay Payment Transaction")
+		txn_name = frappe.db.get_value(
+			"EdgePay Payment Transaction", {"provider_reference": prov_ref}, "name"
+		)
+	txn = (
+		frappe.get_doc("EdgePay Payment Transaction", txn_name)
+		if txn_name
+		else frappe.new_doc("EdgePay Payment Transaction")
+	)
 	txn.payment_request = pr.name
 	txn.payment_attempt = attempt.name
 	txn.provider = pr.provider
@@ -143,18 +149,39 @@ def process_webhook_event(provider_code, headers, raw_body):
 	attempt.provider_transaction_reference = txn_ref or attempt.provider_transaction_reference
 	attempt.provider_payment_reference = prov_ref or attempt.provider_payment_reference
 	attempt.save(ignore_permissions=True)
-	register_reference("Webhook Event", event_ref, pr.name, payment_attempt=attempt.name, payment_transaction=txn.name)
+	register_reference(
+		"Webhook Event", event_ref, pr.name, payment_attempt=attempt.name, payment_transaction=txn.name
+	)
 	if prov_ref:
-		register_reference("Provider Payment", prov_ref, pr.name, payment_attempt=attempt.name, payment_transaction=txn.name)
+		register_reference(
+			"Provider Payment", prov_ref, pr.name, payment_attempt=attempt.name, payment_transaction=txn.name
+		)
 	if txn_ref:
-		register_reference("Provider Transaction", txn_ref, pr.name, payment_attempt=attempt.name, payment_transaction=txn.name)
+		register_reference(
+			"Provider Transaction",
+			txn_ref,
+			pr.name,
+			payment_attempt=attempt.name,
+			payment_transaction=txn.name,
+		)
 
 	if status == "Success" and attempt.status != "Successful":
-		transition_attempt(attempt, "Successful", "Webhook Payment Successful", "webhook", txn, {"event_reference": event_ref})
+		transition_attempt(
+			attempt,
+			"Successful",
+			"Webhook Payment Successful",
+			"webhook",
+			txn,
+			{"event_reference": event_ref},
+		)
 	elif status == "Failed" and attempt.status not in {"Successful", "Failed"}:
-		transition_attempt(attempt, "Failed", "Webhook Payment Failed", "webhook", txn, {"event_reference": event_ref})
+		transition_attempt(
+			attempt, "Failed", "Webhook Payment Failed", "webhook", txn, {"event_reference": event_ref}
+		)
 	elif status == "Pending" and attempt.status == "Initiated":
-		transition_attempt(attempt, "Pending", "Webhook Payment Pending", "webhook", txn, {"event_reference": event_ref})
+		transition_attempt(
+			attempt, "Pending", "Webhook Payment Pending", "webhook", txn, {"event_reference": event_ref}
+		)
 	elif status == "Refunded":
 		refund_name = frappe.db.get_value(
 			"EdgePay Refund Request",
