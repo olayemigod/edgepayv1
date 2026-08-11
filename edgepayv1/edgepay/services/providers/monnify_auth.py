@@ -27,7 +27,9 @@ def get_monnify_token(provider_doc, provider_account):
 		return token
 
 	settings = frappe.get_doc("EdgePay Settings")
-	sandbox_mode = provider_account.environment == "Sandbox" or provider_doc.sandbox_mode or settings.sandbox_mode
+	sandbox_mode = (
+		provider_account.environment == "Sandbox" or provider_doc.sandbox_mode or settings.sandbox_mode
+	)
 	base_url = provider_doc.base_url
 	if not base_url:
 		base_url = "https://sandbox.monnify.com/api" if sandbox_mode else "https://api.monnify.com/api"
