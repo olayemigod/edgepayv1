@@ -18,6 +18,7 @@ MERCHANT_SCOPED_DOCTYPES = {
 	"EdgePay Delivery Endpoint": "merchant",
 	"EdgePay Delivery": "merchant",
 	"EdgePay Delivery Attempt": "merchant",
+	"EdgePay Payment Link": "merchant",
 	"EdgePay Payment Request": "merchant",
 	"EdgePay Payment Attempt": "merchant",
 	"EdgePay Payment Transaction": "merchant",
@@ -63,6 +64,7 @@ def has_merchant_permission(doc, user=None, permission_type=None):
 	return bool(merchant and merchant in merchants)
 
 
+def payment_link_query(user=None): return merchant_permission_query("EdgePay Payment Link", user)
 def payment_request_query(user=None): return merchant_permission_query("EdgePay Payment Request", user)
 def payment_attempt_query(user=None): return merchant_permission_query("EdgePay Payment Attempt", user)
 def payment_transaction_query(user=None): return merchant_permission_query("EdgePay Payment Transaction", user)
