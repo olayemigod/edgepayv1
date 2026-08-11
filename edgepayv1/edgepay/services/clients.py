@@ -20,12 +20,15 @@ class MonnifyClient(BaseHTTPClient):
 		if not is_live_call_allowed(self.provider_doc, self.provider_account):
 			frappe.throw(_("External HTTP calls are disabled or the selected Provider Account is not ready"))
 		from edgepayv1.edgepay.services.providers.monnify_auth import get_monnify_token
+
 		token = get_monnify_token(self.provider_doc, self.provider_account)
 		headers = headers or {}
 		headers["Authorization"] = f"Bearer {token}"
 		headers["Content-Type"] = "application/json"
 		import requests
+
 		from edgepayv1.edgepay.services.security import redact_secrets
+
 		try:
 			response = requests.post(url, json=payload, headers=headers, timeout=self.timeout)
 			response.raise_for_status()
@@ -37,11 +40,14 @@ class MonnifyClient(BaseHTTPClient):
 		if not is_live_call_allowed(self.provider_doc, self.provider_account):
 			frappe.throw(_("External HTTP calls are disabled or the selected Provider Account is not ready"))
 		from edgepayv1.edgepay.services.providers.monnify_auth import get_monnify_token
+
 		token = get_monnify_token(self.provider_doc, self.provider_account)
 		headers = headers or {}
 		headers["Authorization"] = f"Bearer {token}"
 		import requests
+
 		from edgepayv1.edgepay.services.security import redact_secrets
+
 		try:
 			response = requests.get(url, headers=headers, timeout=self.timeout)
 			response.raise_for_status()
@@ -59,13 +65,25 @@ class SimulatedMonnifyClient(BaseHTTPClient):
 
 	def post(self, url, payload, headers=None):
 		payment_reference = payload.get("paymentReference", "EP-MOCK-REF")
-		return {"checkoutUrl": f"https://sandbox.monnify.com/checkout/{payment_reference}", "transactionReference": f"MON-{payment_reference}-TX", "status": "PAID"}
+		return {
+			"checkoutUrl": f"https://sandbox.monnify.com/checkout/{payment_reference}",
+			"transactionReference": f"MON-{payment_reference}-TX",
+			"status": "PAID",
+		}
 
 	def get(self, url, headers=None):
 		import urllib.parse as urlparse
+
 		params = urlparse.parse_qs(urlparse.urlparse(url).query)
 		ref = params.get("transactionReference", ["MON-MOCK-TX"])[0]
-		return {"amount": self.mock_amount, "paymentStatus": self.mock_status, "transactionReference": ref, "paidOn": self.mock_paid_on, "paymentDescription": "Test Payment", "currencyCode": "NGN"}
+		return {
+			"amount": self.mock_amount,
+			"paymentStatus": self.mock_status,
+			"transactionReference": ref,
+			"paidOn": self.mock_paid_on,
+			"paymentDescription": "Test Payment",
+			"currencyCode": "NGN",
+		}
 
 
 _CLIENT_OVERRIDES = {}
