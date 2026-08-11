@@ -5,7 +5,7 @@
 	function sections() {
 		const items = [
 			{label:"Overview",icon:"home",items:[{label:"EdgePay Home",icon:"home",route:"/app/edgepay-home"},{label:"Merchant Onboarding",icon:"check",route:"/app/merchant-onboarding"}]},
-			{label:"Payments",icon:"wallet",items:[{label:"Payments",icon:"list",route:"/app/edgepay-payment-request"},{label:"Payment Attempts",icon:"repeat",route:"/app/edgepay-payment-attempt"},{label:"Transactions",icon:"credit-card",route:"/app/edgepay-payment-transaction"},{label:"Refunds",icon:"undo",route:"/app/edgepay-refund-request"}]},
+			{label:"Payments",icon:"wallet",items:[{label:"Payments",icon:"list",route:"/app/edgepay-payment-request"},{label:"Payment Links",icon:"link",route:"/app/edgepay-payment-link"},{label:"Payment Attempts",icon:"repeat",route:"/app/edgepay-payment-attempt"},{label:"Transactions",icon:"credit-card",route:"/app/edgepay-payment-transaction"},{label:"Refunds",icon:"undo",route:"/app/edgepay-refund-request"}]},
 			{label:"Finance",icon:"chart",items:[{label:"Settlements",icon:"bank",route:"/app/edgepay-settlement-batch"},{label:"Fees",icon:"dollar-sign",route:"/app/edgepay-fee-record"},{label:"Disputes",icon:"alert-triangle",route:"/app/edgepay-dispute"},{label:"Chargebacks",icon:"alert-circle",route:"/app/edgepay-chargeback"}]},
 			{label:"Integrations",icon:"link",items:[{label:"API Clients",icon:"key",route:"/app/edgepay-api-client"},{label:"Delivery Endpoints",icon:"send",route:"/app/edgepay-delivery-endpoint"},{label:"Deliveries",icon:"activity",route:"/app/edgepay-delivery"}]},
 		];
