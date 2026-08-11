@@ -31,7 +31,11 @@ class MonnifyProvider(BaseProvider):
 	def get_base_url(self):
 		settings = frappe.get_doc("EdgePay Settings")
 		account = self.get_credentials_doc()
-		sandbox_mode = bool(account and account.environment == "Sandbox") or self.provider_doc.sandbox_mode or settings.sandbox_mode
+		sandbox_mode = (
+			bool(account and account.environment == "Sandbox")
+			or self.provider_doc.sandbox_mode
+			or settings.sandbox_mode
+		)
 		base_url = self.provider_doc.base_url
 		if not base_url:
 			return "https://sandbox.monnify.com/api" if sandbox_mode else "https://api.monnify.com/api"
@@ -52,13 +56,25 @@ class MonnifyProvider(BaseProvider):
 		}
 
 	def parse_checkout_response(self, response):
-		return {"checkout_url": response.get("checkoutUrl"), "provider_reference": response.get("transactionReference"), "status": "Initiated"}
+		return {
+			"checkout_url": response.get("checkoutUrl"),
+			"provider_reference": response.get("transactionReference"),
+			"status": "Initiated",
+		}
 
 	def build_verification_payload(self, reference):
 		return {"transactionReference": reference}
 
 	def parse_verification_response(self, response):
-		return {"amount": response.get("amount"), "currency": response.get("currencyCode"), "status": self.normalize_transaction_status(response.get("paymentStatus")), "provider_reference": response.get("transactionReference"), "transaction_reference": response.get("transactionReference"), "paid_on": response.get("paidOn"), "settlement_status": response.get("settlementStatus") or "Unsettled"}
+		return {
+			"amount": response.get("amount"),
+			"currency": response.get("currencyCode"),
+			"status": self.normalize_transaction_status(response.get("paymentStatus")),
+			"provider_reference": response.get("transactionReference"),
+			"transaction_reference": response.get("transactionReference"),
+			"paid_on": response.get("paidOn"),
+			"settlement_status": response.get("settlementStatus") or "Unsettled",
+		}
 
 	def verify_webhook_signature(self, payload, headers):
 		account = self._credentials()
@@ -74,7 +90,16 @@ class MonnifyProvider(BaseProvider):
 
 	def parse_webhook_payload(self, payload):
 		event_data = payload.get("eventData") or {}
-		return {"amount": event_data.get("amountPaid"), "currency": event_data.get("currency"), "status": self.normalize_transaction_status(event_data.get("paymentStatus")), "provider_reference": event_data.get("transactionReference"), "transaction_reference": event_data.get("transactionReference"), "paid_on": event_data.get("paidOn"), "settlement_status": event_data.get("settlementStatus") or "Unsettled", "event_type": payload.get("eventType")}
+		return {
+			"amount": event_data.get("amountPaid"),
+			"currency": event_data.get("currency"),
+			"status": self.normalize_transaction_status(event_data.get("paymentStatus")),
+			"provider_reference": event_data.get("transactionReference"),
+			"transaction_reference": event_data.get("transactionReference"),
+			"paid_on": event_data.get("paidOn"),
+			"settlement_status": event_data.get("settlementStatus") or "Unsettled",
+			"event_type": payload.get("eventType"),
+		}
 
 	def get_webhook_event_reference(self, payload):
 		return payload.get("eventReference") or payload.get("eventData", {}).get("transactionReference")
@@ -86,4 +111,11 @@ class MonnifyProvider(BaseProvider):
 		return payload.get("eventData", {}).get("transactionReference")
 
 	def normalize_transaction_status(self, provider_status):
-		return {"PAID": "Success", "OVERPAID": "Success", "PARTIALLY_PAID": "Success", "FAILED": "Failed", "PENDING": "Pending", "EXPIRED": "Failed"}.get(provider_status, "Pending")
+		return {
+			"PAID": "Success",
+			"OVERPAID": "Success",
+			"PARTIALLY_PAID": "Success",
+			"FAILED": "Failed",
+			"PENDING": "Pending",
+			"EXPIRED": "Failed",
+		}.get(provider_status, "Pending")
