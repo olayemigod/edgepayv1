@@ -74,7 +74,7 @@ def run_monnify_sandbox_smoke():
 				{
 					"doctype": "EdgePay Merchant",
 					"merchant_name": merchant_name,
-					"status": "Active",
+					"status": "Draft",
 					"legal_name": merchant_name,
 					"email": "smoke_test@edgepay.com",
 					"country": "Nigeria",
@@ -133,7 +133,9 @@ def run_monnify_sandbox_smoke():
 		print(f"Checkout URL: {redact_secrets(checkout_url) if checkout_url else None}")
 		print(f"Provider Reference: {redact_secrets(provider_ref) if provider_ref else None}")
 		if not checkout_url or not provider_ref:
-			raise Exception("Checkout initialization did not return a valid checkout URL or provider reference.")
+			raise Exception(
+				"Checkout initialization did not return a valid checkout URL or provider reference."
+			)
 
 		print("Running transaction verification...")
 		verify_res = verify_transaction(payment_request_name)
