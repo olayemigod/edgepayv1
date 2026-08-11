@@ -70,7 +70,7 @@ def require_document_permission(doctype, name, ptype="read"):
 	if not name or not frappe.db.exists(doctype, name):
 		frappe.throw(_("{0} {1} was not found").format(doctype, name))
 	doc = frappe.get_doc(doctype, name)
-	if not doc.has_permission(ptype=ptype):
+	if not doc.has_permission(permtype=ptype):
 		frappe.throw(_("Not permitted to {0} {1} {2}").format(ptype, doctype, name), frappe.PermissionError)
 	if hasattr(doc, "merchant") and doc.merchant:
 		require_merchant_access(doc.merchant)
