@@ -1,20 +1,26 @@
-# -*- coding: utf-8 -*-
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from edgepayv1.edgepay.services.clients import set_client_override, clear_client_overrides, SimulatedMonnifyClient
-from edgepayv1.edgepay.tests.utils import DatabaseStateBackup
-from edgepayv1.edgepay.sdk import (
-	create_source_payment_request,
-	initialize_source_checkout,
-	verify_source_payment,
-	get_source_payment_status,
-	get_source_transaction_status,
-	get_connector_profile,
-	CONNECTOR_PROFILES,
-	ConnectorProfile
-)
 import json
 import os
+
+import frappe
+from frappe.tests.utils import FrappeTestCase
+
+from edgepayv1.edgepay.sdk import (
+	CONNECTOR_PROFILES,
+	ConnectorProfile,
+	create_source_payment_request,
+	get_connector_profile,
+	get_source_payment_status,
+	get_source_transaction_status,
+	initialize_source_checkout,
+	verify_source_payment,
+)
+from edgepayv1.edgepay.services.clients import SimulatedMonnifyClient, clear_client_overrides, set_client_override
+from edgepayv1.edgepay.tests.utils import (
+	DatabaseStateBackup,
+	cleanup_test_merchant_provider_account,
+	create_test_merchant_provider_account,
+)
+
 
 class TestEdgePaySDK(FrappeTestCase):
 	def setUp(self):
@@ -22,45 +28,51 @@ class TestEdgePaySDK(FrappeTestCase):
 		self.db_backup.backup()
 		super(TestEdgePaySDK, self).setUp()
 		clear_client_overrides()
-		
+
 		# Override client with simulator to prevent external calls
 		self.mock_client = SimulatedMonnifyClient()
 		self.mock_client.mock_amount = 3000.00
 		set_client_override("monnify", self.mock_client)
-		
+
 		# Configure settings to enable EdgePay in sandbox mode
 		self.settings = frappe.get_doc("EdgePay Settings")
 		self.settings.sandbox_mode = 1
 		self.settings.enable_edgepay = 1
 		self.settings.allow_external_http_calls = 0
 		self.settings.save()
-		
+
 		# Set up mock provider
 		self.provider_name = "Test SDK Provider"
 		frappe.db.delete("EdgePay Provider", {"provider_code": "monnify"})
 
-		self.provider = frappe.get_doc({
-			"doctype": "EdgePay Provider",
-			"provider_name": self.provider_name,
-			"provider_code": "monnify",
-			"enabled": 1,
-			"sandbox_mode": 1,
-			"provider_type": "Monnify",
-			"status": "Active",
-			"base_url": "https://sandbox.monnify.com/api",
-			"api_key": "test_api_key",
-			"secret_key": "test_secret_key"
-		}).insert()
+		self.provider = frappe.get_doc(
+			{
+				"doctype": "EdgePay Provider",
+				"provider_name": self.provider_name,
+				"provider_code": "monnify",
+				"enabled": 1,
+				"sandbox_mode": 1,
+				"provider_type": "Monnify",
+				"status": "Active",
+				"base_url": "https://sandbox.monnify.com/api",
+				"api_key": "test_api_key",
+				"secret_key": "test_secret_key",
+			}
+		).insert()
+		self.merchant, self.provider_account = create_test_merchant_provider_account(
+			self.provider_name, "Test SDK Merchant", api_key="test_api_key", secret_key="test_secret_key"
+		)
 
 		frappe.set_user("Administrator")
 
 	def tearDown(self):
 		clear_client_overrides()
 		frappe.set_user("Administrator")
-		if frappe.db.exists("EdgePay Provider", self.provider_name):
-			frappe.db.delete("EdgePay Provider", self.provider_name)
 		# Clean up any created Payment Requests during test
 		frappe.db.delete("EdgePay Payment Request", {"provider": self.provider_name})
+		cleanup_test_merchant_provider_account(self.merchant, self.provider_name)
+		if frappe.db.exists("EdgePay Provider", self.provider_name):
+			frappe.db.delete("EdgePay Provider", self.provider_name)
 		super(TestEdgePaySDK, self).tearDown()
 		self.db_backup.restore()
 
@@ -73,7 +85,7 @@ class TestEdgePaySDK(FrappeTestCase):
 			"amount": 3000.00,
 			"currency": "NGN",
 			"customer_name": "Bob",
-			"customer_email": "bob@retail.com"
+			"customer_email": "bob@retail.com",
 		}
 		res = create_source_payment_request(context)
 		self.assertTrue(res["ok"])
@@ -98,7 +110,7 @@ class TestEdgePaySDK(FrappeTestCase):
 			"amount": 3000.00,
 			"currency": "NGN",
 			"customer_name": "Bob",
-			"customer_email": "bob@retail.com"
+			"customer_email": "bob@retail.com",
 		}
 		res = create_source_payment_request(context)
 		pr_name = res["data"]["payment_request"]
@@ -107,7 +119,7 @@ class TestEdgePaySDK(FrappeTestCase):
 		init_res = initialize_source_checkout(pr_name)
 		self.assertTrue(init_res["ok"])
 		self.assertEqual(init_res["status"], "success")
-		
+
 		# Verify safe checkout fields returned only
 		data = init_res["data"]
 		self.assertEqual(data["payment_request"], pr_name)
@@ -131,7 +143,7 @@ class TestEdgePaySDK(FrappeTestCase):
 			"amount": 3000.00,
 			"currency": "NGN",
 			"customer_name": "Bob",
-			"customer_email": "bob@retail.com"
+			"customer_email": "bob@retail.com",
 		}
 		res = create_source_payment_request(context)
 		pr_name = res["data"]["payment_request"]
@@ -168,14 +180,14 @@ class TestEdgePaySDK(FrappeTestCase):
 			"amount": 3000.00,
 			"currency": "NGN",
 			"customer_name": "Bob",
-			"customer_email": "bob@retail.com"
+			"customer_email": "bob@retail.com",
 		}
 		res = create_source_payment_request(context)
 		pr_name = res["data"]["payment_request"]
 
 		# Capture status in DB before calling get_source_payment_status
 		pr_before = frappe.get_doc("EdgePay Payment Request", pr_name)
-		
+
 		# Get payment status
 		status_res = get_source_payment_status(pr_name)
 		self.assertTrue(status_res["ok"])
@@ -214,7 +226,7 @@ class TestEdgePaySDK(FrappeTestCase):
 			"currency": "NGN",
 			"customer_name": "Bob",
 			"customer_email": "bob@retail.com",
-			"metadata_json": '{"api_key": "my_secret_key", "bearer_token": "my_token"}'
+			"metadata_json": '{"api_key": "my_secret_key", "bearer_token": "my_token"}',
 		}
 		res = create_source_payment_request(context)
 		self.assertTrue(res["ok"])
@@ -224,9 +236,8 @@ class TestEdgePaySDK(FrappeTestCase):
 		self.assertNotIn("my_token", res_str)
 
 	def test_static_import_scan_for_decoupling(self):
-		import os
 		edgepay_dir = os.path.dirname(os.path.dirname(__file__))
-		
+
 		# Define absolute non-import patterns for external apps dynamically to avoid self-matching
 		forbidden_apps = ["erpnext", "posnext", "retailedge", "vetedge", "coreedge", "pos_next"]
 
@@ -241,12 +252,12 @@ class TestEdgePaySDK(FrappeTestCase):
 						content = f.read()
 						for app in forbidden_apps:
 							self.assertNotIn(
-								f"import {app}", 
-								content, 
-								f"Forbidden import pattern 'import {app}' found in {file_path}"
+								f"import {app}",
+								content,
+								f"Forbidden import pattern 'import {app}' found in {file_path}",
 							)
 							self.assertNotIn(
-								f"from {app}", 
-								content, 
-								f"Forbidden import pattern 'from {app}' found in {file_path}"
+								f"from {app}",
+								content,
+								f"Forbidden import pattern 'from {app}' found in {file_path}",
 							)
