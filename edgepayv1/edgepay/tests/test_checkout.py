@@ -22,7 +22,7 @@ class TestCheckout(FrappeTestCase):
 	def setUp(self):
 		self.db_backup = DatabaseStateBackup()
 		self.db_backup.backup()
-		super(TestCheckout, self).setUp()
+		super().setUp()
 		clear_client_overrides()
 
 		self.mock_client = SimulatedMonnifyClient()
@@ -90,7 +90,7 @@ class TestCheckout(FrappeTestCase):
 		cleanup_test_merchant_provider_account(self.merchant, self.provider_name)
 		if frappe.db.exists("EdgePay Provider", self.provider_name):
 			frappe.db.delete("EdgePay Provider", self.provider_name)
-		super(TestCheckout, self).tearDown()
+		super().tearDown()
 		self.db_backup.restore()
 
 	def test_successful_checkout_initialization(self):
