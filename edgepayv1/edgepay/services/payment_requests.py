@@ -50,6 +50,7 @@ def create_payment_request_record(
 	expires_on=None,
 	metadata_json=None,
 	idempotency_key=None,
+	enforce_actor_access=True,
 ):
 	from edgepayv1.edgepay.services.checkout import check_and_mark_expired
 
@@ -62,7 +63,8 @@ def create_payment_request_record(
 
 	account = resolve_provider_account(provider, merchant=merchant, provider_account=provider_account)
 	merchant = account.merchant
-	require_merchant_access(merchant)
+	if enforce_actor_access:
+		require_merchant_access(merchant)
 
 	provider_doc = frappe.get_doc("EdgePay Provider", provider)
 	if not provider_doc.enabled or not account.enabled or account.status != "Active":
@@ -72,15 +74,7 @@ def create_payment_request_record(
 		require_live_payment_eligibility(merchant)
 
 	if idempotency_key:
-		existing_name = frappe.db.get_value(
-			"EdgePay Payment Request",
-			{
-				"merchant": merchant,
-				"idempotency_key": idempotency_key,
-				"status": ["not in", ["Paid", "Overpaid", "Refunded", "Failed", "Expired", "Cancelled"]],
-			},
-			"name",
-		)
+		existing_name = frappe.db.get_value("EdgePay Payment Request", {"merchant": merchant, "idempotency_key": idempotency_key, "status": ["not in", ["Paid", "Overpaid", "Refunded", "Failed", "Expired", "Cancelled"]]}, "name")
 		if existing_name:
 			request = frappe.get_doc("EdgePay Payment Request", existing_name)
 			if not check_and_mark_expired(request):
@@ -118,28 +112,11 @@ def create_payment_request_record(
 			frappe.throw(_("Invalid metadata_json payload"))
 
 	request.request_reference = f"REQ-{frappe.generate_hash(length=12)}"
-	request.insert()
+	request.insert(ignore_permissions=not enforce_actor_access)
 	from edgepayv1.edgepay.services.external_references import register_reference
 	register_reference("Payment Request", request.request_reference, request.name)
 	return _success_response(request, "Payment request created successfully")
 
 
 def _success_response(request, message):
-	return {
-		"ok": True,
-		"status": "success",
-		"message": message,
-		"data": redact_secrets({
-			"payment_request": request.name,
-			"request_reference": request.request_reference,
-			"merchant": request.merchant,
-			"provider_account": request.provider_account,
-			"status": request.status,
-			"amount": request.amount,
-			"paid_amount": getattr(request, "paid_amount", 0),
-			"outstanding_amount": getattr(request, "outstanding_amount", request.amount),
-			"currency": request.currency,
-			"provider": request.provider,
-			"expires_on": request.expires_on,
-		}),
-	}
+	return {"ok": True, "status": "success", "message": message, "data": redact_secrets({"payment_request": request.name, "request_reference": request.request_reference, "merchant": request.merchant, "provider_account": request.provider_account, "status": request.status, "amount": request.amount, "paid_amount": getattr(request, "paid_amount", 0), "outstanding_amount": getattr(request, "outstanding_amount", request.amount), "currency": request.currency, "provider": request.provider, "expires_on": request.expires_on})}
