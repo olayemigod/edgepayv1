@@ -32,11 +32,44 @@ class TestCheckout(FrappeTestCase):
 		self.settings.save()
 		self.provider_name = "Test Monnify Checkout Provider"
 		frappe.db.delete("EdgePay Provider", {"provider_code": "monnify"})
-		self.provider = frappe.get_doc({"doctype": "EdgePay Provider", "provider_name": self.provider_name, "provider_code": "monnify", "enabled": 1, "sandbox_mode": 1, "provider_type": "Monnify", "status": "Active", "base_url": "https://sandbox.monnify.com/api", "api_key": "global_api_key_should_not_be_used", "secret_key": "global_secret_should_not_be_used", "contract_code": "GLOBAL-CONTRACT"}).insert()
-		self.merchant, self.provider_account = create_test_merchant_provider_account(self.provider_name, "Test Checkout Merchant", api_key="merchant_api_key", secret_key="merchant_secret_key", contract_code="MERCHANT-CONTRACT")
+		self.provider = frappe.get_doc(
+			{
+				"doctype": "EdgePay Provider",
+				"provider_name": self.provider_name,
+				"provider_code": "monnify",
+				"enabled": 1,
+				"sandbox_mode": 1,
+				"provider_type": "Monnify",
+				"status": "Active",
+				"base_url": "https://sandbox.monnify.com/api",
+				"api_key": "global_api_key_should_not_be_used",
+				"secret_key": "global_secret_should_not_be_used",
+				"contract_code": "GLOBAL-CONTRACT",
+			}
+		).insert()
+		self.merchant, self.provider_account = create_test_merchant_provider_account(
+			self.provider_name,
+			"Test Checkout Merchant",
+			api_key="merchant_api_key",
+			secret_key="merchant_secret_key",
+			contract_code="MERCHANT-CONTRACT",
+		)
 		self.req_ref = "REQ-CHECKOUT-TEST-001"
 		frappe.db.delete("EdgePay Payment Request", {"request_reference": self.req_ref})
-		self.payment_request = frappe.get_doc({"doctype": "EdgePay Payment Request", "request_reference": self.req_ref, "merchant": self.merchant.name, "provider_account": self.provider_account.name, "provider": self.provider_name, "status": "Draft", "amount": 1500.50, "currency": "NGN", "customer_name": "Test Customer", "customer_email": "test@customer.com"}).insert()
+		self.payment_request = frappe.get_doc(
+			{
+				"doctype": "EdgePay Payment Request",
+				"request_reference": self.req_ref,
+				"merchant": self.merchant.name,
+				"provider_account": self.provider_account.name,
+				"provider": self.provider_name,
+				"status": "Draft",
+				"amount": 1500.50,
+				"currency": "NGN",
+				"customer_name": "Test Customer",
+				"customer_email": "test@customer.com",
+			}
+		).insert()
 
 	def tearDown(self):
 		clear_client_overrides()
@@ -105,7 +138,9 @@ class TestCheckout(FrappeTestCase):
 			self.payment_request.db_set("status", status)
 			with self.assertRaises(frappe.ValidationError) as context:
 				initialize_checkout(self.payment_request.name)
-			self.assertIn("cannot initialize checkout for a payment request with status", str(context.exception).lower())
+			self.assertIn(
+				"cannot initialize checkout for a payment request with status", str(context.exception).lower()
+			)
 
 	def test_no_secret_value_in_api_response(self):
 		frappe.set_user("Administrator")
