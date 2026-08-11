@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
+import re
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
+
+HEX_COLOUR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
 
 class EdgePayMerchant(Document):
@@ -11,6 +15,8 @@ class EdgePayMerchant(Document):
 		if not self.public_id:
 			self.public_id = f"MER-{frappe.generate_hash(length=12).upper()}"
 		self.public_id = self.public_id.strip().upper()
+		if self.checkout_primary_colour and not HEX_COLOUR_RE.match(self.checkout_primary_colour.strip()):
+			frappe.throw(_("Checkout Primary Colour must be a six-digit hex colour such as #111827"))
 		self._validate_live_activation()
 
 	def _validate_live_activation(self):
