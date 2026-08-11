@@ -106,7 +106,6 @@ def run_monnify_sandbox_smoke():
 		settings.allow_external_http_calls = 1
 		settings.sandbox_mode = 1
 		settings.save(ignore_permissions=True)
-		frappe.db.commit()
 
 		pr = frappe.new_doc("EdgePay Payment Request")
 		pr.merchant = merchant.name
@@ -123,7 +122,6 @@ def run_monnify_sandbox_smoke():
 		pr.metadata_json = json.dumps({"smoke_test": True})
 		pr.insert(ignore_permissions=True)
 		payment_request_name = pr.name
-		frappe.db.commit()
 
 		print(f"Temporary Payment Request created: {payment_request_name}")
 		print("Initializing checkout...")
@@ -169,5 +167,4 @@ def run_monnify_sandbox_smoke():
 			settings.save(ignore_permissions=True)
 		else:
 			frappe.db.delete("EdgePay Settings", settings_name)
-		frappe.db.commit()
 		print("Settings and temporary smoke-test records successfully restored.")
