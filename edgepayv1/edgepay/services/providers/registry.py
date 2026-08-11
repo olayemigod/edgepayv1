@@ -9,9 +9,7 @@ _PROVIDER_MAP = {"monnify": MonnifyProvider}
 def get_provider_instance(provider_name, provider_account=None):
 	"""Return a provider runtime bound to an optional merchant Provider Account."""
 	provider_doc = (
-		frappe.get_doc("EdgePay Provider", provider_name)
-		if isinstance(provider_name, str)
-		else provider_name
+		frappe.get_doc("EdgePay Provider", provider_name) if isinstance(provider_name, str) else provider_name
 	)
 	if not provider_doc:
 		frappe.throw(_("Provider Configuration not found"))
