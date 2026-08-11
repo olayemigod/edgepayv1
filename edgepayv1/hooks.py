@@ -5,14 +5,18 @@ app_description = "Universal payment orchestration layer for Frappe, ERPNext, PO
 app_email = "info@processedge.com.ng"
 app_license = "mit"
 
-fixtures = [{"dt": "Role", "filters": [["role_name", "in", ["EdgePay Admin", "EdgePay Manager", "EdgePay User", "EdgePay Auditor"]]]}]
+# EdgePay consumes the standalone EdgeSuite UI runtime. CoreEdge is not required
+# to render EdgePay or process payments.
+required_apps = ["edgesuite_ui"]
+app_home = "/app/edgepay-home"
+app_include_js = ["/assets/edgepayv1/js/edgepay_product_menu.js"]
+add_to_apps_screen = [{"name": "edgepayv1", "logo": "/assets/edgepayv1/logo.png", "title": "EdgePay", "route": "/app/edgepay-home", "has_permission": "edgepayv1.api.permission.has_app_permission"}]
 
+fixtures = [{"dt": "Role", "filters": [["role_name", "in", ["EdgePay Admin", "EdgePay Manager", "EdgePay User", "EdgePay Auditor"]]]}]
 doctype_js = {"EdgePay Payment Request": "public/js/edgepay_payment_request.js"}
 
 scheduler_events = {
-	"cron": {
-		"*/5 * * * *": ["edgepayv1.edgepay.services.delivery_worker.process_pending_deliveries"],
-	},
+	"cron": {"*/5 * * * *": ["edgepayv1.edgepay.services.delivery_worker.process_pending_deliveries"]},
 	"daily": ["edgepayv1.edgepay.services.delivery_worker.cleanup_expired_api_nonces"],
 }
 
