@@ -28,21 +28,18 @@ class TestApiContract(FrappeTestCase):
 	def setUp(self):
 		self.db_backup = DatabaseStateBackup()
 		self.db_backup.backup()
-		super(TestApiContract, self).setUp()
+		super().setUp()
 		clear_client_overrides()
 
 		frappe.db.delete("EdgePay Provider", {"provider_code": "monnify"})
-
 		self.mock_client = SimulatedMonnifyClient()
 		self.mock_client.mock_amount = 2500.00
 		set_client_override("monnify", self.mock_client)
-
 		self.settings = frappe.get_doc("EdgePay Settings")
 		self.settings.sandbox_mode = 1
 		self.settings.enable_edgepay = 1
 		self.settings.allow_external_http_calls = 0
 		self.settings.save()
-
 		self.provider_name = "Test API Contract Provider"
 		if not frappe.db.exists("EdgePay Provider", self.provider_name):
 			self.provider = frappe.get_doc(
@@ -65,18 +62,15 @@ class TestApiContract(FrappeTestCase):
 			self.provider.api_key = "test_api_key"
 			self.provider.secret_key = "test_secret_key"
 			self.provider.save()
-
 		self.merchant, self.provider_account = create_test_merchant_provider_account(
 			self.provider_name,
 			"Test API Contract Merchant",
 			api_key="test_api_key",
 			secret_key="test_secret_key",
 		)
-
 		self.req_ref = "REQ-CONTRACT-TEST-001"
 		if frappe.db.exists("EdgePay Payment Request", {"request_reference": self.req_ref}):
 			frappe.db.delete("EdgePay Payment Request", {"request_reference": self.req_ref})
-
 		self.payment_request = frappe.get_doc(
 			{
 				"doctype": "EdgePay Payment Request",
@@ -92,7 +86,6 @@ class TestApiContract(FrappeTestCase):
 				"provider_reference": "MON-REQ-CONTRACT-TEST-001-TX",
 			}
 		).insert()
-
 		frappe.db.delete("EdgePay Payment Transaction", {"payment_request": self.payment_request.name})
 		frappe.set_user("Administrator")
 
@@ -105,7 +98,7 @@ class TestApiContract(FrappeTestCase):
 		cleanup_test_merchant_provider_account(self.merchant, self.provider_name)
 		if frappe.db.exists("EdgePay Provider", self.provider_name):
 			frappe.db.delete("EdgePay Provider", self.provider_name)
-		super(TestApiContract, self).tearDown()
+		super().tearDown()
 		self.db_backup.restore()
 
 	def test_expired_payment_request_cannot_be_initialized(self):
