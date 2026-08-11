@@ -1,7 +1,7 @@
 import frappe
 
 
-class DatabaseStateBackup(object):
+class DatabaseStateBackup:
 	def __init__(self):
 		self.saved_providers = []
 		self.saved_settings = None
@@ -9,9 +9,7 @@ class DatabaseStateBackup(object):
 
 	def backup(self):
 		# 1. Backup any existing monnify providers
-		providers = frappe.get_all(
-			"EdgePay Provider", filters={"provider_code": "monnify"}, fields=["name"]
-		)
+		providers = frappe.get_all("EdgePay Provider", filters={"provider_code": "monnify"}, fields=["name"])
 		for p in providers:
 			try:
 				doc = frappe.get_doc("EdgePay Provider", p.name)
@@ -81,7 +79,7 @@ def create_test_merchant_provider_account(
 			{
 				"doctype": "EdgePay Merchant",
 				"merchant_name": merchant_name,
-				"status": "Active",
+				"status": "Draft",
 				"legal_name": merchant_name,
 				"email": "edgepay-tests@example.com",
 				"country": "Nigeria",
