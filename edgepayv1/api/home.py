@@ -215,6 +215,7 @@ def get_home_context() -> dict:
 			"merchant": merchant_name or "",
 			"merchant_account": context.get("merchant_account") or "",
 			"merchant_branch": context.get("merchant_branch") or "",
+			"can_bootstrap": bool(context.get("can_bootstrap")),
 		},
 		"merchant": merchant,
 		"request_counts": request_counts,
