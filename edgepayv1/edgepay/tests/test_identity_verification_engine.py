@@ -34,9 +34,7 @@ class TestIdentityVerificationEngine(FrappeTestCase):
 		self.assertIn("Representative identity verification is missing", service)
 
 	def test_frontend_uses_password_fields_and_safe_session_args(self):
-		page = (
-			APP_ROOT / "public/js/edgepay_workspace/EdgePayWorkspaceShell.vue"
-		).read_text()
+		page = (APP_ROOT / "public/js/edgepay_workspace/EdgePayWorkspaceShell.vue").read_text()
 		self.assertIn('fieldname: "nin"', page)
 		self.assertIn('fieldname: "bvn"', page)
 		self.assertGreaterEqual(page.count('fieldtype: "Password"'), 3)
