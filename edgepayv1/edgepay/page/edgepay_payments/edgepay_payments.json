@@ -1,0 +1,21 @@
+{
+ "content": null,
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "module": "EdgePay",
+ "name": "edgepay-payments",
+ "owner": "Administrator",
+ "page_name": "edgepay-payments",
+ "roles": [
+  {"role": "EdgePay Admin"},
+  {"role": "EdgePay Manager"},
+  {"role": "EdgePay User"},
+  {"role": "EdgePay Auditor"}
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Payments"
+}
