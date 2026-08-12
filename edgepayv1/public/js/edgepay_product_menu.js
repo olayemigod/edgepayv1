@@ -25,7 +25,8 @@
 				items: [
 					{
 						label: "EdgePay Home",
-						description: "Review payment activity, onboarding and integration readiness.",
+						description:
+							"Review payment activity, onboarding and integration readiness.",
 						icon: "home",
 						route: "/app/edgepay-home",
 					},
@@ -44,7 +45,8 @@
 				items: [
 					{
 						label: "Payment Operations",
-						description: "Review merchant payment requests, attempts and events in one workspace.",
+						description:
+							"Review merchant payment requests, attempts and events in one workspace.",
 						icon: "activity",
 						route: "/app/edgepay-payments",
 					},
