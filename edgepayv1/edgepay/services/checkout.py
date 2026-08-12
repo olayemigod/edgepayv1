@@ -145,7 +145,9 @@ def initialize_checkout(payment_request_name, payment_method=None):
 
 
 @frappe.whitelist()
-def initialize_payment_request_checkout(payment_request_name, payment_method=None):
+def initialize_payment_request_checkout(
+	payment_request_name: str, payment_method: str | None = None
+):
 	if not frappe.has_permission("EdgePay Payment Request", "write", doc=payment_request_name):
 		frappe.throw(
 			_("Not permitted to initialize checkout for this Payment Request"), frappe.PermissionError
