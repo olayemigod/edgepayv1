@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from edgepayv1.edgepay.services.escrow import sync_from_payment_request
 
 
