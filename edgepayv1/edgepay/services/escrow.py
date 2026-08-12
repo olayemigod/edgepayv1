@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import json
@@ -9,9 +8,11 @@ from frappe.utils import flt, now_datetime
 
 from edgepayv1.edgepay.services.authorization import require_merchant_access
 from edgepayv1.edgepay.services.escrow_adapters import normalize_escrow_payload
-from edgepayv1.edgepay.services.payment_requests import create_payment_request_record, resolve_provider_account
+from edgepayv1.edgepay.services.payment_requests import (
+	create_payment_request_record,
+	resolve_provider_account,
+)
 from edgepayv1.edgepay.services.security import redact_secrets
-
 
 ACTIVE_TERMINAL_STATUSES = {"Released", "Refunded", "Cancelled"}
 
@@ -36,7 +37,10 @@ def create_escrow(source_adapter: str, payload: dict) -> dict:
 			"name",
 		)
 		if existing:
-			return _agreement_response(frappe.get_doc("EdgePay Escrow Agreement", existing), "Existing active escrow retrieved successfully")
+			return _agreement_response(
+				frappe.get_doc("EdgePay Escrow Agreement", existing),
+				"Existing active escrow retrieved successfully",
+			)
 
 	agreement = frappe.new_doc("EdgePay Escrow Agreement")
 	agreement.agreement_reference = f"ESC-{frappe.generate_hash(length=14)}"
@@ -68,10 +72,20 @@ def create_escrow(source_adapter: str, payload: dict) -> dict:
 		"idempotency_key",
 	):
 		setattr(agreement, fieldname, normalized.get(fieldname))
-	agreement.source_payload_json = json.dumps(redact_secrets(normalized["source_payload"]), default=str, sort_keys=True)
-	agreement.metadata_json = json.dumps(redact_secrets(normalized.get("metadata") or {}), default=str, sort_keys=True)
+	agreement.source_payload_json = json.dumps(
+		redact_secrets(normalized["source_payload"]), default=str, sort_keys=True
+	)
+	agreement.metadata_json = json.dumps(
+		redact_secrets(normalized.get("metadata") or {}), default=str, sort_keys=True
+	)
 	agreement.insert()
-	_record_event(agreement, "Escrow Created", status_from=None, status_to="Draft", details={"source_adapter": normalized["source_adapter"]})
+	_record_event(
+		agreement,
+		"Escrow Created",
+		status_from=None,
+		status_to="Draft",
+		details={"source_adapter": normalized["source_adapter"]},
+	)
 
 	payment = create_payment_request_record(
 		provider=account.provider,
@@ -99,26 +113,41 @@ def create_escrow(source_adapter: str, payload: dict) -> dict:
 
 
 def sync_from_payment_request(payment_request_name: str) -> None:
-	agreement_name = frappe.db.get_value("EdgePay Escrow Agreement", {"payment_request": payment_request_name}, "name")
+	agreement_name = frappe.db.get_value(
+		"EdgePay Escrow Agreement", {"payment_request": payment_request_name}, "name"
+	)
 	if not agreement_name:
 		return
 	agreement = frappe.get_doc("EdgePay Escrow Agreement", agreement_name)
 	payment_request = frappe.get_doc("EdgePay Payment Request", payment_request_name)
 	paid = flt(getattr(payment_request, "paid_amount", 0))
 	agreement.funded_amount = min(paid, flt(agreement.amount))
-	agreement.held_amount = max(0, agreement.funded_amount - flt(agreement.released_amount) - flt(agreement.refunded_amount))
-	if agreement.funded_amount >= flt(agreement.amount) and agreement.status in {"Awaiting Funding", "Funded"}:
+	agreement.held_amount = max(
+		0, agreement.funded_amount - flt(agreement.released_amount) - flt(agreement.refunded_amount)
+	)
+	if agreement.funded_amount >= flt(agreement.amount) and agreement.status in {
+		"Awaiting Funding",
+		"Funded",
+	}:
 		old_status = agreement.status
 		agreement.status = "Held"
 		if not agreement.funded_on:
 			agreement.funded_on = now_datetime()
 		agreement.save(ignore_permissions=True)
-		_record_event(agreement, "Funding Confirmed", status_from=old_status, status_to="Held", amount=agreement.funded_amount)
+		_record_event(
+			agreement,
+			"Funding Confirmed",
+			status_from=old_status,
+			status_to="Held",
+			amount=agreement.funded_amount,
+		)
 	else:
 		agreement.save(ignore_permissions=True)
 
 
-def request_release(escrow_name: str, actor_reference: str, evidence_reference: str | None = None, details: dict | None = None) -> dict:
+def request_release(
+	escrow_name: str, actor_reference: str, evidence_reference: str | None = None, details: dict | None = None
+) -> dict:
 	agreement = _get_writable_escrow(escrow_name)
 	if agreement.status != "Held":
 		frappe.throw(_("Only a fully funded held escrow can enter release review"))
@@ -136,7 +165,9 @@ def request_release(escrow_name: str, actor_reference: str, evidence_reference: 
 	return _agreement_response(agreement, "Escrow release request recorded")
 
 
-def approve_release(escrow_name: str, actor_reference: str, evidence_reference: str | None = None, details: dict | None = None) -> dict:
+def approve_release(
+	escrow_name: str, actor_reference: str, evidence_reference: str | None = None, details: dict | None = None
+) -> dict:
 	agreement = _get_writable_escrow(escrow_name)
 	if agreement.status not in {"Held", "Release Pending"}:
 		frappe.throw(_("Escrow is not eligible for release approval"))
@@ -154,7 +185,9 @@ def approve_release(escrow_name: str, actor_reference: str, evidence_reference: 
 	return _agreement_response(agreement, "Escrow release approved; settlement confirmation is pending")
 
 
-def open_escrow_dispute(escrow_name: str, actor_reference: str, reason: str, evidence_reference: str | None = None) -> dict:
+def open_escrow_dispute(
+	escrow_name: str, actor_reference: str, reason: str, evidence_reference: str | None = None
+) -> dict:
 	agreement = _get_writable_escrow(escrow_name)
 	if agreement.status not in {"Held", "Release Pending", "Settlement Pending"}:
 		frappe.throw(_("Escrow cannot be disputed in its current state"))
@@ -170,7 +203,9 @@ def open_escrow_dispute(escrow_name: str, actor_reference: str, reason: str, evi
 	return _agreement_response(agreement, "Escrow dispute opened")
 
 
-def record_settlement(escrow_name: str, amount, actor_reference: str, source_event_reference: str | None = None) -> dict:
+def record_settlement(
+	escrow_name: str, amount, actor_reference: str, source_event_reference: str | None = None
+) -> dict:
 	agreement = _get_writable_escrow(escrow_name)
 	if agreement.status != "Settlement Pending":
 		frappe.throw(_("Escrow must be Settlement Pending before settlement confirmation"))
@@ -178,7 +213,9 @@ def record_settlement(escrow_name: str, amount, actor_reference: str, source_eve
 	if settlement_amount <= 0 or settlement_amount > flt(agreement.held_amount):
 		frappe.throw(_("Settlement amount must be within the held escrow balance"))
 	agreement.released_amount = flt(agreement.released_amount) + settlement_amount
-	agreement.held_amount = max(0, flt(agreement.funded_amount) - flt(agreement.released_amount) - flt(agreement.refunded_amount))
+	agreement.held_amount = max(
+		0, flt(agreement.funded_amount) - flt(agreement.released_amount) - flt(agreement.refunded_amount)
+	)
 	old_status = agreement.status
 	if agreement.held_amount == 0:
 		agreement.status = "Released"
@@ -205,7 +242,9 @@ def _get_writable_escrow(name):
 	return doc
 
 
-def _transition(doc, target, event_type, actor_type="System", actor_reference=None, evidence_reference=None, details=None):
+def _transition(
+	doc, target, event_type, actor_type="System", actor_reference=None, evidence_reference=None, details=None
+):
 	old_status = doc.status
 	doc.status = target
 	doc.save(ignore_permissions=True)
