@@ -35,7 +35,10 @@ doctype_js = {"EdgePay Payment Request": "public/js/edgepay_payment_request.js"}
 doc_events = {
 	"EdgePay Payment Request": {
 		"on_update": "edgepayv1.edgepay.services.escrow_hooks.sync_escrow_funding",
-	}
+	},
+	"EdgePay Refund Request": {
+		"on_update": "edgepayv1.edgepay.services.escrow_financial.sync_from_refund_request",
+	},
 }
 
 scheduler_events = {
@@ -74,6 +77,8 @@ permission_query_conditions = {
 	"EdgePay Settlement Item": "edgepayv1.permissions.settlement_item_query",
 	"EdgePay Escrow Agreement": "edgepayv1.permissions.escrow_agreement_query",
 	"EdgePay Escrow Event": "edgepayv1.permissions.escrow_event_query",
+	"EdgePay Escrow Evidence": "edgepayv1.permissions.escrow_evidence_query",
+	"EdgePay Escrow Payout Attempt": "edgepayv1.permissions.escrow_payout_attempt_query",
 	"EdgePay Webhook Event": "edgepayv1.permissions.webhook_event_query",
 	"EdgePay Status Handoff Event": "edgepayv1.permissions.handoff_event_query",
 }
@@ -109,6 +114,8 @@ has_permission = {
 		"EdgePay Settlement Item",
 		"EdgePay Escrow Agreement",
 		"EdgePay Escrow Event",
+		"EdgePay Escrow Evidence",
+		"EdgePay Escrow Payout Attempt",
 		"EdgePay Webhook Event",
 		"EdgePay Status Handoff Event",
 	]
