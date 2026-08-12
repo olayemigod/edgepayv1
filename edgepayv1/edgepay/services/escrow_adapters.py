@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Source adapters for the reusable EdgePay escrow domain.
 
 Adapters normalize product-specific trade payloads into the stable EdgePay escrow
@@ -41,9 +40,12 @@ def _normalize_agricedge(payload: dict) -> dict:
 		"source_doctype": str(payload.get("source_doctype") or "AgricEdge Trade"),
 		"source_name": trade_id,
 		"external_trade_reference": trade_id,
-		"external_tenant_reference": payload.get("tenant_reference") or payload.get("external_tenant_reference"),
-		"external_company_reference": payload.get("company_reference") or payload.get("external_company_reference"),
-		"external_branch_reference": payload.get("branch_reference") or payload.get("external_branch_reference"),
+		"external_tenant_reference": payload.get("tenant_reference")
+		or payload.get("external_tenant_reference"),
+		"external_company_reference": payload.get("company_reference")
+		or payload.get("external_company_reference"),
+		"external_branch_reference": payload.get("branch_reference")
+		or payload.get("external_branch_reference"),
 		"buyer_reference": buyer_id,
 		"buyer_name": _required(payload, "buyer_name"),
 		"buyer_email": _required(payload, "buyer_email"),
@@ -58,8 +60,12 @@ def _normalize_agricedge(payload: dict) -> dict:
 		"release_policy": str(payload.get("release_policy") or "Buyer Acceptance"),
 		"acceptance_deadline": payload.get("acceptance_deadline"),
 		"dispute_deadline": payload.get("dispute_deadline"),
-		"idempotency_key": str(payload.get("idempotency_key") or f"AgricEdge:Trade:{trade_id}:escrow"),
-		"payment_purpose": str(payload.get("description") or f"AgricEdge Trade {trade_id} escrow funding"),
+		"idempotency_key": str(
+			payload.get("idempotency_key") or f"AgricEdge:Trade:{trade_id}:escrow"
+		),
+		"payment_purpose": str(
+			payload.get("description") or f"AgricEdge Trade {trade_id} escrow funding"
+		),
 		"metadata": _agricedge_metadata(payload),
 		"source_payload": redact_secrets(deepcopy(payload)),
 	}
@@ -73,7 +79,8 @@ def _normalize_generic(payload: dict) -> dict:
 		"source_app": _required(payload, "source_app"),
 		"source_doctype": payload.get("source_doctype"),
 		"source_name": payload.get("source_name"),
-		"external_trade_reference": payload.get("external_trade_reference") or payload.get("source_name"),
+		"external_trade_reference": payload.get("external_trade_reference")
+		or payload.get("source_name"),
 		"external_tenant_reference": payload.get("external_tenant_reference"),
 		"external_company_reference": payload.get("external_company_reference"),
 		"external_branch_reference": payload.get("external_branch_reference"),
@@ -110,7 +117,11 @@ def _agricedge_metadata(payload: dict) -> dict:
 		"buyer_email",
 		"buyer_phone",
 	}
-	return {key: value for key, value in redact_secrets(deepcopy(payload)).items() if key not in reserved}
+	return {
+		key: value
+		for key, value in redact_secrets(deepcopy(payload)).items()
+		if key not in reserved
+	}
 
 
 def _required(payload: dict, fieldname: str):
