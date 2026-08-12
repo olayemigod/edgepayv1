@@ -1,0 +1,25 @@
+{
+ "doctype":"DocType","name":"EdgePay Escrow Event","module":"EdgePay","autoname":"hash","track_changes":0,"engine":"InnoDB","sort_field":"creation","sort_order":"DESC",
+ "field_order":["merchant","escrow_agreement","event_type","status_from","status_to","amount","currency","actor_type","actor_reference","evidence_reference","source_event_reference","occurred_on","details_json"],
+ "fields":[
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1,"read_only":1},
+  {"fieldname":"escrow_agreement","fieldtype":"Link","label":"Escrow Agreement","options":"EdgePay Escrow Agreement","reqd":1,"search_index":1,"read_only":1},
+  {"fieldname":"event_type","fieldtype":"Data","label":"Event Type","reqd":1,"search_index":1,"read_only":1},
+  {"fieldname":"status_from","fieldtype":"Data","label":"Status From","read_only":1},
+  {"fieldname":"status_to","fieldtype":"Data","label":"Status To","read_only":1},
+  {"fieldname":"amount","fieldtype":"Currency","label":"Amount","options":"currency","read_only":1},
+  {"fieldname":"currency","fieldtype":"Link","label":"Currency","options":"Currency","read_only":1},
+  {"fieldname":"actor_type","fieldtype":"Data","label":"Actor Type","read_only":1},
+  {"fieldname":"actor_reference","fieldtype":"Data","label":"Actor Reference","read_only":1},
+  {"fieldname":"evidence_reference","fieldtype":"Data","label":"Evidence Reference","read_only":1},
+  {"fieldname":"source_event_reference","fieldtype":"Data","label":"Source Event Reference","search_index":1,"read_only":1},
+  {"fieldname":"occurred_on","fieldtype":"Datetime","label":"Occurred On","reqd":1,"read_only":1},
+  {"fieldname":"details_json","fieldtype":"Code","label":"Details JSON","options":"JSON","read_only":1}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"report":1,"export":1},
+  {"role":"EdgePay User","read":1},
+  {"role":"EdgePay Auditor","read":1,"report":1,"export":1}
+ ]
+}
