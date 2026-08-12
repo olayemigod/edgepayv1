@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import frappe
 
 PLATFORM_ROLES = {"System Manager", "EdgePay Admin", "EdgePay Manager"}
@@ -30,6 +29,10 @@ MERCHANT_SCOPED_DOCTYPES = {
 	"EdgePay Fee Record": "merchant",
 	"EdgePay Settlement Batch": "merchant",
 	"EdgePay Settlement Item": "merchant",
+	"EdgePay Escrow Agreement": "merchant",
+	"EdgePay Escrow Event": "merchant",
+	"EdgePay Escrow Evidence": "merchant",
+	"EdgePay Escrow Payout Attempt": "merchant",
 	"EdgePay Webhook Event": "merchant",
 	"EdgePay Status Handoff Event": "merchant",
 }
@@ -63,31 +66,129 @@ def has_merchant_permission(doc, user=None, permission_type=None):
 	return bool(merchant and merchant in merchants)
 
 
-def payment_request_query(user=None): return merchant_permission_query("EdgePay Payment Request", user)
-def payment_attempt_query(user=None): return merchant_permission_query("EdgePay Payment Attempt", user)
-def payment_transaction_query(user=None): return merchant_permission_query("EdgePay Payment Transaction", user)
-def payment_event_query(user=None): return merchant_permission_query("EdgePay Payment Event", user)
-def external_reference_query(user=None): return merchant_permission_query("EdgePay External Reference", user)
-def refund_request_query(user=None): return merchant_permission_query("EdgePay Refund Request", user)
-def refund_processing_attempt_query(user=None): return merchant_permission_query("EdgePay Refund Processing Attempt", user)
-def dispute_query(user=None): return merchant_permission_query("EdgePay Dispute", user)
-def chargeback_query(user=None): return merchant_permission_query("EdgePay Chargeback", user)
-def fee_record_query(user=None): return merchant_permission_query("EdgePay Fee Record", user)
-def settlement_batch_query(user=None): return merchant_permission_query("EdgePay Settlement Batch", user)
-def settlement_item_query(user=None): return merchant_permission_query("EdgePay Settlement Item", user)
-def api_client_query(user=None): return merchant_permission_query("EdgePay API Client", user)
-def api_nonce_query(user=None): return merchant_permission_query("EdgePay API Request Nonce", user)
-def api_usage_query(user=None): return merchant_permission_query("EdgePay API Usage Log", user)
-def delivery_endpoint_query(user=None): return merchant_permission_query("EdgePay Delivery Endpoint", user)
-def delivery_query(user=None): return merchant_permission_query("EdgePay Delivery", user)
-def delivery_attempt_query(user=None): return merchant_permission_query("EdgePay Delivery Attempt", user)
-def merchant_query(user=None): return merchant_permission_query("EdgePay Merchant", user)
-def merchant_account_query(user=None): return merchant_permission_query("EdgePay Merchant Account", user)
-def merchant_branch_query(user=None): return merchant_permission_query("EdgePay Merchant Branch", user)
-def provider_account_query(user=None): return merchant_permission_query("EdgePay Provider Account", user)
-def merchant_verification_query(user=None): return merchant_permission_query("EdgePay Merchant Verification", user)
-def verification_consent_query(user=None): return merchant_permission_query("EdgePay Verification Consent", user)
-def identity_session_query(user=None): return merchant_permission_query("EdgePay Identity Verification Session", user)
-def identity_check_query(user=None): return merchant_permission_query("EdgePay Identity Verification Check", user)
-def webhook_event_query(user=None): return merchant_permission_query("EdgePay Webhook Event", user)
-def handoff_event_query(user=None): return merchant_permission_query("EdgePay Status Handoff Event", user)
+def payment_request_query(user=None):
+	return merchant_permission_query("EdgePay Payment Request", user)
+
+
+def payment_attempt_query(user=None):
+	return merchant_permission_query("EdgePay Payment Attempt", user)
+
+
+def payment_transaction_query(user=None):
+	return merchant_permission_query("EdgePay Payment Transaction", user)
+
+
+def payment_event_query(user=None):
+	return merchant_permission_query("EdgePay Payment Event", user)
+
+
+def external_reference_query(user=None):
+	return merchant_permission_query("EdgePay External Reference", user)
+
+
+def refund_request_query(user=None):
+	return merchant_permission_query("EdgePay Refund Request", user)
+
+
+def refund_processing_attempt_query(user=None):
+	return merchant_permission_query("EdgePay Refund Processing Attempt", user)
+
+
+def dispute_query(user=None):
+	return merchant_permission_query("EdgePay Dispute", user)
+
+
+def chargeback_query(user=None):
+	return merchant_permission_query("EdgePay Chargeback", user)
+
+
+def fee_record_query(user=None):
+	return merchant_permission_query("EdgePay Fee Record", user)
+
+
+def settlement_batch_query(user=None):
+	return merchant_permission_query("EdgePay Settlement Batch", user)
+
+
+def settlement_item_query(user=None):
+	return merchant_permission_query("EdgePay Settlement Item", user)
+
+
+def escrow_agreement_query(user=None):
+	return merchant_permission_query("EdgePay Escrow Agreement", user)
+
+
+def escrow_event_query(user=None):
+	return merchant_permission_query("EdgePay Escrow Event", user)
+
+
+def escrow_evidence_query(user=None):
+	return merchant_permission_query("EdgePay Escrow Evidence", user)
+
+
+def escrow_payout_attempt_query(user=None):
+	return merchant_permission_query("EdgePay Escrow Payout Attempt", user)
+
+
+def api_client_query(user=None):
+	return merchant_permission_query("EdgePay API Client", user)
+
+
+def api_nonce_query(user=None):
+	return merchant_permission_query("EdgePay API Request Nonce", user)
+
+
+def api_usage_query(user=None):
+	return merchant_permission_query("EdgePay API Usage Log", user)
+
+
+def delivery_endpoint_query(user=None):
+	return merchant_permission_query("EdgePay Delivery Endpoint", user)
+
+
+def delivery_query(user=None):
+	return merchant_permission_query("EdgePay Delivery", user)
+
+
+def delivery_attempt_query(user=None):
+	return merchant_permission_query("EdgePay Delivery Attempt", user)
+
+
+def merchant_query(user=None):
+	return merchant_permission_query("EdgePay Merchant", user)
+
+
+def merchant_account_query(user=None):
+	return merchant_permission_query("EdgePay Merchant Account", user)
+
+
+def merchant_branch_query(user=None):
+	return merchant_permission_query("EdgePay Merchant Branch", user)
+
+
+def provider_account_query(user=None):
+	return merchant_permission_query("EdgePay Provider Account", user)
+
+
+def merchant_verification_query(user=None):
+	return merchant_permission_query("EdgePay Merchant Verification", user)
+
+
+def verification_consent_query(user=None):
+	return merchant_permission_query("EdgePay Verification Consent", user)
+
+
+def identity_session_query(user=None):
+	return merchant_permission_query("EdgePay Identity Verification Session", user)
+
+
+def identity_check_query(user=None):
+	return merchant_permission_query("EdgePay Identity Verification Check", user)
+
+
+def webhook_event_query(user=None):
+	return merchant_permission_query("EdgePay Webhook Event", user)
+
+
+def handoff_event_query(user=None):
+	return merchant_permission_query("EdgePay Status Handoff Event", user)

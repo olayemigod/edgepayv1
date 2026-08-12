@@ -1,0 +1,28 @@
+{
+ "doctype":"DocType","name":"EdgePay Escrow Payout Attempt","module":"EdgePay","autoname":"naming_series:","naming_rule":"By \"Naming Series\" field","track_changes":1,"engine":"InnoDB",
+ "field_order":["naming_series","merchant","escrow_agreement","provider_account","status","amount","currency","beneficiary_reference","idempotency_key","provider_reference","attempt_number","started_on","completed_on","request_json","response_json","error_message"],
+ "fields":[
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Naming Series","options":"EP-EPA-.YYYY.-","default":"EP-EPA-.YYYY.-","reqd":1},
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1,"read_only":1},
+  {"fieldname":"escrow_agreement","fieldtype":"Link","label":"Escrow Agreement","options":"EdgePay Escrow Agreement","reqd":1,"search_index":1},
+  {"fieldname":"provider_account","fieldtype":"Link","label":"Provider Account","options":"EdgePay Provider Account","reqd":1,"read_only":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Created\nSubmitted\nProcessing\nCompleted\nFailed\nCancelled","default":"Created","reqd":1},
+  {"fieldname":"amount","fieldtype":"Currency","label":"Payout Amount","options":"currency","reqd":1},
+  {"fieldname":"currency","fieldtype":"Link","label":"Currency","options":"Currency","reqd":1,"read_only":1},
+  {"fieldname":"beneficiary_reference","fieldtype":"Data","label":"Beneficiary Reference","reqd":1,"read_only":1},
+  {"fieldname":"idempotency_key","fieldtype":"Data","label":"Idempotency Key","reqd":1,"unique":1,"search_index":1},
+  {"fieldname":"provider_reference","fieldtype":"Data","label":"Provider Payout Reference","read_only":1,"search_index":1},
+  {"fieldname":"attempt_number","fieldtype":"Int","label":"Attempt Number","default":"1","read_only":1},
+  {"fieldname":"started_on","fieldtype":"Datetime","label":"Started On","read_only":1},
+  {"fieldname":"completed_on","fieldtype":"Datetime","label":"Completed On","read_only":1},
+  {"fieldname":"request_json","fieldtype":"Code","label":"Request JSON","options":"JSON","read_only":1},
+  {"fieldname":"response_json","fieldtype":"Code","label":"Response JSON","options":"JSON","read_only":1},
+  {"fieldname":"error_message","fieldtype":"Small Text","label":"Error Message","read_only":1}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"write":1,"create":1,"report":1,"export":1},
+  {"role":"EdgePay User","read":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
+}

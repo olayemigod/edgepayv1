@@ -1,0 +1,23 @@
+{
+ "doctype":"DocType","name":"EdgePay Escrow Evidence","module":"EdgePay","autoname":"naming_series:","naming_rule":"By \"Naming Series\" field","track_changes":1,"engine":"InnoDB",
+ "field_order":["naming_series","merchant","escrow_agreement","evidence_type","submitted_by_type","submitted_by_reference","external_reference","file_url","description","occurred_on","source_payload_json"],
+ "fields":[
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Naming Series","options":"EP-EEV-.YYYY.-","default":"EP-EEV-.YYYY.-","reqd":1},
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1,"read_only":1},
+  {"fieldname":"escrow_agreement","fieldtype":"Link","label":"Escrow Agreement","options":"EdgePay Escrow Agreement","reqd":1,"search_index":1},
+  {"fieldname":"evidence_type","fieldtype":"Select","label":"Evidence Type","options":"Delivery\nAcceptance\nInspection\nQuality\nLogistics\nCommunication\nPayment\nDispute\nOther","default":"Other","reqd":1},
+  {"fieldname":"submitted_by_type","fieldtype":"Select","label":"Submitted By Type","options":"Buyer\nBeneficiary\nMarketplace\nTransporter\nInspector\nModerator\nProvider\nSystem\nOther","default":"Marketplace","reqd":1},
+  {"fieldname":"submitted_by_reference","fieldtype":"Data","label":"Submitted By Reference","reqd":1},
+  {"fieldname":"external_reference","fieldtype":"Data","label":"External Evidence Reference","search_index":1},
+  {"fieldname":"file_url","fieldtype":"Data","label":"File or Evidence URL"},
+  {"fieldname":"description","fieldtype":"Small Text","label":"Description"},
+  {"fieldname":"occurred_on","fieldtype":"Datetime","label":"Occurred On","reqd":1},
+  {"fieldname":"source_payload_json","fieldtype":"Code","label":"Source Payload JSON","options":"JSON","read_only":1}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"create":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"create":1,"report":1,"export":1},
+  {"role":"EdgePay User","read":1,"create":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
+}
