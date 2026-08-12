@@ -60,16 +60,38 @@ class TestEdgePayProductSurface(FrappeTestCase):
 			self.assertNotIn(raw_route, source)
 		self.assertNotIn("/app/edgepay-settings", source)
 
-	def test_operation_pages_load_edgesuite_runtime(self):
-		for page in ("edgepay_payments", "edgepay_finance", "edgepay_integrations"):
-			source = self.app_path("edgepay", "page", page, f"{page}.js").read_text()
-			self.assertIn('frappe.require("edgesuite_ui.bundle.js"', source)
-			self.assertIn("window.EdgeSuiteUI || window.EdgeUI", source)
+	def test_all_operational_pages_mount_shared_edgesuite_workspace(self):
+		pages = {
+			"edgepay_home": "home",
+			"merchant_onboarding": "onboarding",
+			"edgepay_payments": "payments",
+			"edgepay_finance": "finance",
+			"edgepay_integrations": "integrations",
+		}
+		for page, mode in pages.items():
+			folder = "merchant_onboarding" if page == "merchant_onboarding" else page
+			source = self.app_path("edgepay", "page", folder, f"{page}.js").read_text()
+			self.assertIn("edgepay_page_loader.js", source)
+			self.assertIn(f"mount(wrapper, '{mode}')", source)
+
+	def test_workspace_uses_true_edgesuite_shell(self):
+		loader = self.app_path("public", "js", "edgepay_page_loader.js").read_text()
+		bundle = self.app_path("public", "js", "edgepay_workspace.bundle.js").read_text()
+		workspace = self.app_path("public", "js", "edgepay_workspace", "EdgePayWorkspace.vue").read_text()
+		self.assertIn("edgeui.bundle.js", loader)
+		self.assertIn("EdgeAppShell", loader)
+		self.assertIn("createEdgeApp", loader + bundle)
+		self.assertIn("mountEdgePayWorkspace", loader + bundle)
+		self.assertIn("<EdgeAppShell", workspace)
+		self.assertIn("<EdgePageLayout>", workspace)
+		self.assertIn("<EdgePageHeader", workspace)
+		self.assertIn("<EdgeDataTable", workspace)
 
 	def test_home_context_is_merchant_scoped(self):
 		source = self.app_path("api", "home.py").read_text()
 		self.assertIn("get_default_merchant_context", source)
 		self.assertIn('merchant_filter = {"merchant": merchant_name}', source)
+		self.assertIn('"can_bootstrap": bool(context.get("can_bootstrap"))', source)
 		self.assertIn("EdgePay Payment Attempt", source)
 		self.assertIn("EdgePay Provider Account", source)
 		self.assertIn("EdgePay API Client", source)
@@ -88,10 +110,7 @@ class TestEdgePayProductSurface(FrappeTestCase):
 			self.app_path("api", "home.py"),
 			self.app_path("api", "operations.py"),
 			self.app_path("public", "js", "edgepay_product_menu.js"),
-			self.app_path("edgepay", "page", "edgepay_home", "edgepay_home.js"),
-			self.app_path("edgepay", "page", "edgepay_payments", "edgepay_payments.js"),
-			self.app_path("edgepay", "page", "edgepay_integrations", "edgepay_integrations.js"),
-			self.app_path("edgepay", "page", "edgepay_finance", "edgepay_finance.js"),
+			self.app_path("public", "js", "edgepay_workspace", "EdgePayWorkspace.vue"),
 		]
 		combined = "\n".join(path.read_text() for path in paths)
 		for fieldname in (
@@ -103,9 +122,3 @@ class TestEdgePayProductSurface(FrappeTestCase):
 			"checkout_token",
 		):
 			self.assertNotIn(fieldname, combined)
-
-	def test_home_loads_canonical_edgesuite_runtime(self):
-		source = self.app_path("edgepay", "page", "edgepay_home", "edgepay_home.js").read_text()
-		self.assertIn('frappe.require("edgesuite_ui.bundle.js"', source)
-		self.assertIn("window.EdgeSuiteUI || window.EdgeUI", source)
-		self.assertIn("edgepayv1.api.home.get_home_context", source)
