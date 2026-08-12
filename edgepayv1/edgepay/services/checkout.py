@@ -23,6 +23,8 @@ def check_and_mark_expired(pr, save=True):
 						notify_source_payment_status(pr.name, event_source="expiry")
 					except Exception as exc:
 						log(f"Failed to dispatch expiry status handoff for {pr.name}: {exc}", level="error")
+				else:
+					pr.status = "Expired"
 				return True
 			if pr.status == "Expired":
 				return True
