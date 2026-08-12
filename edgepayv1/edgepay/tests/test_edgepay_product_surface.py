@@ -23,9 +23,12 @@ class TestEdgePayProductSurface(FrappeTestCase):
 		self.assertIn("EdgePay Delivery Endpoint", hooks.permission_query_conditions)
 
 	def test_permission_hooks_resolve_from_canonical_module(self):
-		for method in hooks.permission_query_conditions.values():
+		for doctype, method in hooks.permission_query_conditions.items():
 			self.assertTrue(method.startswith("edgepayv1.edgepay.permissions."))
-			self.assertTrue(callable(frappe.get_attr(method)))
+			fn = frappe.get_attr(method)
+			self.assertTrue(callable(fn))
+			condition = frappe.call(fn, "Administrator", doctype=doctype)
+			self.assertIsInstance(condition, str)
 		for method in set(hooks.has_permission.values()):
 			self.assertEqual(method, "edgepayv1.edgepay.permissions.has_merchant_permission")
 			self.assertTrue(callable(frappe.get_attr(method)))
