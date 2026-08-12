@@ -30,6 +30,8 @@ MERCHANT_SCOPED_DOCTYPES = {
 	"EdgePay Fee Record": "merchant",
 	"EdgePay Settlement Batch": "merchant",
 	"EdgePay Settlement Item": "merchant",
+	"EdgePay Escrow Agreement": "merchant",
+	"EdgePay Escrow Event": "merchant",
 	"EdgePay Webhook Event": "merchant",
 	"EdgePay Status Handoff Event": "merchant",
 }
@@ -75,6 +77,8 @@ def chargeback_query(user=None): return merchant_permission_query("EdgePay Charg
 def fee_record_query(user=None): return merchant_permission_query("EdgePay Fee Record", user)
 def settlement_batch_query(user=None): return merchant_permission_query("EdgePay Settlement Batch", user)
 def settlement_item_query(user=None): return merchant_permission_query("EdgePay Settlement Item", user)
+def escrow_agreement_query(user=None): return merchant_permission_query("EdgePay Escrow Agreement", user)
+def escrow_event_query(user=None): return merchant_permission_query("EdgePay Escrow Event", user)
 def api_client_query(user=None): return merchant_permission_query("EdgePay API Client", user)
 def api_nonce_query(user=None): return merchant_permission_query("EdgePay API Request Nonce", user)
 def api_usage_query(user=None): return merchant_permission_query("EdgePay API Usage Log", user)
