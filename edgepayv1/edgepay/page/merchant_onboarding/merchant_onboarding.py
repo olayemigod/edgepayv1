@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import frappe
 from frappe import _
 
@@ -9,14 +8,19 @@ from edgepayv1.edgepay.services.merchant_onboarding import get_onboarding_readin
 
 def _require_bootstrap_access():
 	if not can_bootstrap_merchant():
-		frappe.throw(_("Only an EdgePay platform administrator can create a merchant from first-run onboarding."), frappe.PermissionError)
+		frappe.throw(
+			_("Only an EdgePay platform administrator can create a merchant from first-run onboarding."),
+			frappe.PermissionError,
+		)
 
 
 def _bootstrap_state(context):
 	return {
 		"can_bootstrap": bool(context.get("can_bootstrap")),
 		"has_context": bool(context.get("merchant")),
-		"merchant_count": int(frappe.db.count("EdgePay Merchant") or 0) if context.get("can_bootstrap") else None,
+		"merchant_count": int(frappe.db.count("EdgePay Merchant") or 0)
+		if context.get("can_bootstrap")
+		else None,
 	}
 
 
