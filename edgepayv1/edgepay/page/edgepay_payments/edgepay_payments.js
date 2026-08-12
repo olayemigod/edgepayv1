@@ -14,7 +14,18 @@ frappe.pages["edgepay-payments"].on_page_show = function (wrapper) {
 			: `<tr><td colspan="${columns.length}" class="text-center text-muted p-4">${esc(emptyText)}</td></tr>`;
 		return `<section class="card mb-4"><div class="card-body"><h4>${esc(title)}</h4><div class="table-responsive"><table class="table table-hover"><thead><tr>${columns.map((column) => `<th>${esc(column.label)}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div></div></section>`;
 	};
+	const renderNoContext = (state) => {
+		const action = state.can_bootstrap
+			? `<a class="btn btn-primary" href="/app/merchant-onboarding">${esc(__("Set Up Merchant"))}</a>`
+			: `<a class="btn btn-default" href="/app/edgepay-home">${esc(__("Back to EdgePay Home"))}</a>`;
+		root.innerHTML = `<section class="card"><div class="card-body p-4"><h3 class="mb-2">${esc(__("Merchant context required"))}</h3><p class="text-muted">${esc(state.message || __("A merchant must be assigned before payment operations can be used."))}</p>${action}</div></section>`;
+	};
 	const render = (context) => {
+		const state = context.context_state || {};
+		if (!state.has_context) {
+			renderNoContext(state);
+			return;
+		}
 		const requests = context.requests || [];
 		const attempts = context.attempts || [];
 		const events = context.events || [];
@@ -65,7 +76,9 @@ frappe.pages["edgepay-payments"].on_page_show = function (wrapper) {
 		frappe.call({
 			method: "edgepayv1.api.operations.get_payments_context",
 			callback: (response) => render(response.message || {}),
-			error: (error) => { root.innerHTML = `<div class="alert alert-danger">${esc(error?.message || String(error))}</div>`; },
+			error: (error) => {
+				root.innerHTML = `<div class="alert alert-danger">${esc(error?.message || String(error))}</div>`;
+			},
 		});
 	});
 };
