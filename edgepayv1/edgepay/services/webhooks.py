@@ -241,12 +241,13 @@ def process_webhook_event(provider_code, headers, raw_body):
 	}
 
 
-@frappe.whitelist(allow_guest=True)
-def process_provider_webhook(provider_code):
+# Provider webhooks must be publicly reachable; POST/body validation and merchant-scoped HMAC verification are mandatory.
+@frappe.whitelist(allow_guest=True)  # nosemgrep: frappe-semgrep-rules.rules.security.guest-whitelisted-method
+def process_provider_webhook(provider_code: str):
 	try:
 		require_post_request()
 		request = getattr(frappe.local, "request", None)
-		raw_body = request.get_data(cache=True) if request is not None else b""
+		raw_body = request.get_data() if request is not None else b""
 		headers = request.headers if request is not None else {}
 		validate_webhook_body(raw_body)
 		result = process_webhook_event(provider_code, headers, raw_body)
