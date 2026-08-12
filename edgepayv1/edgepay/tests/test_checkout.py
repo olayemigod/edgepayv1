@@ -113,6 +113,13 @@ class TestCheckout(FrappeTestCase):
 		self.assertEqual(res2["checkout_url"], res1["checkout_url"])
 		self.assertEqual(res2["status"], "Initiated")
 
+	def test_failed_request_can_start_a_new_attempt(self):
+		self.payment_request.db_set("status", "Failed")
+		result = initialize_checkout(self.payment_request.name)
+		self.payment_request.reload()
+		self.assertEqual(self.payment_request.status, "Initiated")
+		self.assertEqual(result["status"], "Initiated")
+
 	def test_disabled_provider_blocks_initialization(self):
 		self.provider.enabled = 0
 		self.provider.save()
@@ -134,7 +141,7 @@ class TestCheckout(FrappeTestCase):
 		self.assertIn("amount must be greater than zero", str(context.exception).lower())
 
 	def test_invalid_payment_request_status_blocks_initialization(self):
-		for status in ["Paid", "Failed", "Expired", "Cancelled"]:
+		for status in ["Paid", "Expired", "Cancelled"]:
 			self.payment_request.db_set("status", status)
 			with self.assertRaises(frappe.ValidationError) as context:
 				initialize_checkout(self.payment_request.name)
