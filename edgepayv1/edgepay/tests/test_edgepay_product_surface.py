@@ -49,13 +49,13 @@ class TestEdgePayProductSurface(FrappeTestCase):
 		):
 			self.assertIn(route, source)
 		for raw_route in (
-			'route: "/app/edgepay-payment-request"',
-			'route: "/app/edgepay-payment-attempt"',
-			'route: "/app/edgepay-payment-event"',
-			'route: "/app/edgepay-refund-request"',
-			'route: "/app/edgepay-settlement-batch"',
-			'route: "/app/edgepay-api-client"',
-			'route: "/app/edgepay-delivery-endpoint"',
+			"/app/edgepay-payment-request",
+			"/app/edgepay-payment-attempt",
+			"/app/edgepay-payment-event",
+			"/app/edgepay-refund-request",
+			"/app/edgepay-settlement-batch",
+			"/app/edgepay-api-client",
+			"/app/edgepay-delivery-endpoint",
 		):
 			self.assertNotIn(raw_route, source)
 		self.assertNotIn("/app/edgepay-settings", source)
@@ -72,16 +72,20 @@ class TestEdgePayProductSurface(FrappeTestCase):
 			folder = "merchant_onboarding" if page == "merchant_onboarding" else page
 			source = self.app_path("edgepay", "page", folder, f"{page}.js").read_text()
 			self.assertIn("edgepay_page_loader.js", source)
-			self.assertIn(f"mount(wrapper, '{mode}')", source)
+			self.assertIn("EdgePayPageLoader.mount", source)
+			self.assertIn(mode, source)
 
 	def test_workspace_uses_true_edgesuite_shell(self):
 		loader = self.app_path("public", "js", "edgepay_page_loader.js").read_text()
 		bundle = self.app_path("public", "js", "edgepay_workspace.bundle.js").read_text()
-		workspace = self.app_path("public", "js", "edgepay_workspace", "EdgePayWorkspace.vue").read_text()
+		workspace = self.app_path(
+			"public", "js", "edgepay_workspace", "EdgePayWorkspaceShell.vue"
+		).read_text()
 		self.assertIn("edgeui.bundle.js", loader)
 		self.assertIn("EdgeAppShell", loader)
 		self.assertIn("createEdgeApp", loader + bundle)
 		self.assertIn("mountEdgePayWorkspace", loader + bundle)
+		self.assertIn("EdgePayWorkspaceShell.vue", bundle)
 		self.assertIn("<EdgeAppShell", workspace)
 		self.assertIn("<EdgePageLayout>", workspace)
 		self.assertIn("<EdgePageHeader", workspace)
@@ -110,7 +114,7 @@ class TestEdgePayProductSurface(FrappeTestCase):
 			self.app_path("api", "home.py"),
 			self.app_path("api", "operations.py"),
 			self.app_path("public", "js", "edgepay_product_menu.js"),
-			self.app_path("public", "js", "edgepay_workspace", "EdgePayWorkspace.vue"),
+			self.app_path("public", "js", "edgepay_workspace", "EdgePayWorkspaceShell.vue"),
 		]
 		combined = "\n".join(path.read_text() for path in paths)
 		for fieldname in (
