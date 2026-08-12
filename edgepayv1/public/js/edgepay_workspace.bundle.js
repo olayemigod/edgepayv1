@@ -5,9 +5,16 @@ export function mountEdgePayWorkspace(target, options = {}) {
 	if (!runtime || typeof runtime.createEdgeApp !== "function") {
 		throw new Error("Standalone EdgeSuite UI runtime is unavailable.");
 	}
+
+	const workspaceComponents = EdgePayWorkspace.components || {};
+	Object.values(workspaceComponents).forEach((component) => {
+		if (!component || typeof component !== "object") return;
+		component.components = { ...runtime.components, ...(component.components || {}) };
+	});
+
 	const Root = {
 		...EdgePayWorkspace,
-		components: { ...runtime.components, ...(EdgePayWorkspace.components || {}) },
+		components: { ...runtime.components, ...workspaceComponents },
 		data() {
 			const base =
 				typeof EdgePayWorkspace.data === "function"
