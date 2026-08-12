@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Internal Payment Request domain services."""
 
 import json
@@ -23,11 +22,15 @@ def resolve_provider_account(provider, merchant=None, provider_account=None):
 	filters = {"provider": provider, "enabled": 1, "status": "Active"}
 	if merchant:
 		filters["merchant"] = merchant
-	accounts = frappe.get_all("EdgePay Provider Account", filters=filters, pluck="name", limit_page_length=2)
+	accounts = frappe.get_all(
+		"EdgePay Provider Account", filters=filters, pluck="name", limit_page_length=2
+	)
 	if not accounts:
 		frappe.throw(_("No enabled Provider Account is available for the selected Merchant and Provider"))
 	if not merchant and len(accounts) > 1:
-		frappe.throw(_("Merchant or Provider Account is required because multiple provider accounts are available"))
+		frappe.throw(
+			_("Merchant or Provider Account is required because multiple provider accounts are available")
+		)
 	return frappe.get_doc("EdgePay Provider Account", accounts[0])
 
 
@@ -65,10 +68,13 @@ def create_payment_request_record(
 	require_merchant_access(merchant)
 
 	provider_doc = frappe.get_doc("EdgePay Provider", provider)
-	if not provider_doc.enabled or not account.enabled or account.status != "Active":
-		frappe.throw(_("The selected provider account is not active"))
+	if not provider_doc.enabled:
+		frappe.throw(_("The selected Provider is disabled"))
+	if not account.enabled or account.status != "Active":
+		frappe.throw(_("The selected Provider Account is not active"))
 	if account.environment == "Live":
 		from edgepayv1.edgepay.services.merchant_onboarding import require_live_payment_eligibility
+
 		require_live_payment_eligibility(merchant)
 
 	if idempotency_key:
@@ -77,14 +83,19 @@ def create_payment_request_record(
 			{
 				"merchant": merchant,
 				"idempotency_key": idempotency_key,
-				"status": ["not in", ["Paid", "Overpaid", "Refunded", "Failed", "Expired", "Cancelled"]],
+				"status": [
+					"not in",
+					["Paid", "Overpaid", "Refunded", "Failed", "Expired", "Cancelled"],
+				],
 			},
 			"name",
 		)
 		if existing_name:
 			request = frappe.get_doc("EdgePay Payment Request", existing_name)
 			if not check_and_mark_expired(request):
-				return _success_response(request, "Existing active Payment Request retrieved successfully (idempotent)")
+				return _success_response(
+					request, "Existing active Payment Request retrieved successfully (idempotent)"
+				)
 
 	request = frappe.new_doc("EdgePay Payment Request")
 	request.merchant = merchant
@@ -120,6 +131,7 @@ def create_payment_request_record(
 	request.request_reference = f"REQ-{frappe.generate_hash(length=12)}"
 	request.insert()
 	from edgepayv1.edgepay.services.external_references import register_reference
+
 	register_reference("Payment Request", request.request_reference, request.name)
 	return _success_response(request, "Payment request created successfully")
 
@@ -129,17 +141,19 @@ def _success_response(request, message):
 		"ok": True,
 		"status": "success",
 		"message": message,
-		"data": redact_secrets({
-			"payment_request": request.name,
-			"request_reference": request.request_reference,
-			"merchant": request.merchant,
-			"provider_account": request.provider_account,
-			"status": request.status,
-			"amount": request.amount,
-			"paid_amount": getattr(request, "paid_amount", 0),
-			"outstanding_amount": getattr(request, "outstanding_amount", request.amount),
-			"currency": request.currency,
-			"provider": request.provider,
-			"expires_on": request.expires_on,
-		}),
+		"data": redact_secrets(
+			{
+				"payment_request": request.name,
+				"request_reference": request.request_reference,
+				"merchant": request.merchant,
+				"provider_account": request.provider_account,
+				"status": request.status,
+				"amount": request.amount,
+				"paid_amount": getattr(request, "paid_amount", 0),
+				"outstanding_amount": getattr(request, "outstanding_amount", request.amount),
+				"currency": request.currency,
+				"provider": request.provider,
+				"expires_on": request.expires_on,
+			}
+		),
 	}
