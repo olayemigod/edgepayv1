@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
