@@ -40,7 +40,7 @@ def resolve_payment_request_by_ref(ref):
 
 
 @frappe.whitelist()
-def validate_provider_configuration(provider_name, provider_account=None):
+def validate_provider_configuration(provider_name: str, provider_account: str | None = None):
 	try:
 		require_platform_configuration_access()
 		provider_doc = require_provider_access(provider_name, ptype="read")
@@ -57,7 +57,7 @@ def validate_provider_configuration(provider_name, provider_account=None):
 
 
 @frappe.whitelist()
-def get_provider_health(provider_name):
+def get_provider_health(provider_name: str):
 	try:
 		require_platform_configuration_access()
 		require_provider_access(provider_name, ptype="read")
@@ -69,7 +69,7 @@ def get_provider_health(provider_name):
 
 
 @frappe.whitelist()
-def validate_live_provider_readiness(provider_name, provider_account=None):
+def validate_live_provider_readiness(provider_name: str, provider_account: str | None = None):
 	try:
 		require_platform_configuration_access()
 		provider_doc = require_provider_access(provider_name, ptype="read")
@@ -101,19 +101,19 @@ def validate_live_provider_readiness(provider_name, provider_account=None):
 
 @frappe.whitelist()
 def create_payment_request(
-	provider,
-	amount,
-	currency,
-	customer_name,
-	customer_email,
-	customer_phone=None,
-	payment_purpose=None,
-	source_app=None,
-	source_doctype=None,
-	source_name=None,
-	expires_on=None,
-	metadata_json=None,
-	idempotency_key=None,
+	provider: str,
+	amount: float | str,
+	currency: str,
+	customer_name: str,
+	customer_email: str,
+	customer_phone: str | None = None,
+	payment_purpose: str | None = None,
+	source_app: str | None = None,
+	source_doctype: str | None = None,
+	source_name: str | None = None,
+	expires_on: str | None = None,
+	metadata_json: str | dict | None = None,
+	idempotency_key: str | None = None,
 ):
 	"""Authenticated public wrapper for Payment Request creation."""
 	try:
@@ -142,7 +142,7 @@ def create_payment_request(
 
 
 @frappe.whitelist()
-def initialize_payment_request_checkout(payment_request_name):
+def initialize_payment_request_checkout(payment_request_name: str):
 	try:
 		require_payment_request_access(payment_request_name, ptype="write")
 		from edgepayv1.edgepay.services.checkout import initialize_checkout
@@ -168,7 +168,7 @@ def initialize_payment_request_checkout(payment_request_name):
 
 
 @frappe.whitelist()
-def verify_payment_request_transaction(payment_request_name):
+def verify_payment_request_transaction(payment_request_name: str):
 	try:
 		require_payment_request_access(payment_request_name, ptype="write")
 		from edgepayv1.edgepay.services.verification import verify_transaction
@@ -196,7 +196,7 @@ def verify_payment_request_transaction(payment_request_name):
 
 
 @frappe.whitelist()
-def get_payment_request_status(payment_request_name):
+def get_payment_request_status(payment_request_name: str):
 	try:
 		pr = require_payment_request_access(payment_request_name, ptype="read")
 		from edgepayv1.edgepay.services.checkout import check_and_mark_expired
@@ -224,7 +224,9 @@ def get_payment_request_status(payment_request_name):
 
 @frappe.whitelist()
 def get_payment_transaction_status(
-	payment_request_name=None, provider_reference=None, transaction_reference=None
+	payment_request_name: str | None = None,
+	provider_reference: str | None = None,
+	transaction_reference: str | None = None,
 ):
 	try:
 		require_authenticated_user()
@@ -263,11 +265,14 @@ def get_payment_transaction_status(
 		return _error_response(exc)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep: frappe-semgrep-rules.rules.security.guest-whitelisted-method
 def handle_checkout_callback(
-	payment_request=None, provider_reference=None, transaction_reference=None, status=None
+	payment_request: str | None = None,
+	provider_reference: str | None = None,
+	transaction_reference: str | None = None,
+	status: str | None = None,
 ):
-	"""Treat redirect parameters as hints and verify payment server-side."""
+	"""Treat public redirect parameters as hints; provider verification remains authoritative."""
 	try:
 		from edgepayv1.edgepay.services.verification import verify_transaction
 
@@ -312,7 +317,7 @@ def handle_checkout_callback(
 
 
 @frappe.whitelist()
-def create_payment_request_from_source(source_context):
+def create_payment_request_from_source(source_context: str | dict):
 	try:
 		require_authenticated_user()
 		require_doctype_permission("EdgePay Payment Request", ptype="create")
@@ -331,7 +336,7 @@ def create_payment_request_from_source(source_context):
 
 
 @frappe.whitelist()
-def get_pending_payment_handoffs(source_app=None, limit=50):
+def get_pending_payment_handoffs(source_app: str | None = None, limit: int | str = 50):
 	try:
 		require_platform_operations_access()
 		from edgepayv1.edgepay.services.handoff import get_pending_handoff_events
@@ -347,7 +352,7 @@ def get_pending_payment_handoffs(source_app=None, limit=50):
 
 
 @frappe.whitelist()
-def mark_payment_handoff_delivered(event_name):
+def mark_payment_handoff_delivered(event_name: str):
 	try:
 		require_platform_operations_access()
 		from edgepayv1.edgepay.services.handoff import mark_handoff_event_delivered
@@ -364,7 +369,7 @@ def mark_payment_handoff_delivered(event_name):
 
 
 @frappe.whitelist()
-def mark_payment_handoff_failed(event_name, error_message=None):
+def mark_payment_handoff_failed(event_name: str, error_message: str | None = None):
 	try:
 		require_platform_operations_access()
 		from edgepayv1.edgepay.services.handoff import mark_handoff_event_failed
