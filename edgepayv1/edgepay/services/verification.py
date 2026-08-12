@@ -8,10 +8,44 @@ from frappe.utils import flt
 from edgepayv1.edgepay.services.attempt_resolution import resolve_or_create_legacy_attempt
 from edgepayv1.edgepay.services.clients import get_client
 from edgepayv1.edgepay.services.external_references import register_reference
-from edgepayv1.edgepay.services.payment_state import transition_attempt
+from edgepayv1.edgepay.services.payment_state import transition_attempt, transition_request
 from edgepayv1.edgepay.services.payment_totals import sync_payment_totals
 from edgepayv1.edgepay.services.providers.registry import get_provider_instance
 from edgepayv1.edgepay.services.security import redact_secrets
+
+NON_VERIFIABLE_REQUEST_STATUSES = {
+	"Expired",
+	"Cancelled",
+	"Refund Pending",
+	"Partly Refunded",
+	"Refunded",
+	"Disputed",
+	"Chargeback",
+}
+
+
+def _find_transaction_name(payment_request, transaction_reference=None, provider_reference=None):
+	if transaction_reference:
+		name = frappe.db.get_value(
+			"EdgePay Payment Transaction",
+			{
+				"payment_request": payment_request,
+				"transaction_reference": transaction_reference,
+			},
+			"name",
+		)
+		if name:
+			return name
+	if provider_reference:
+		return frappe.db.get_value(
+			"EdgePay Payment Transaction",
+			{
+				"payment_request": payment_request,
+				"provider_reference": provider_reference,
+			},
+			"name",
+		)
+	return None
 
 
 def verify_transaction(payment_request_name):
@@ -19,6 +53,11 @@ def verify_transaction(payment_request_name):
 	from edgepayv1.edgepay.services.checkout import check_and_mark_expired
 
 	check_and_mark_expired(pr)
+	pr.reload()
+	if pr.status in NON_VERIFIABLE_REQUEST_STATUSES:
+		frappe.throw(
+			_("Cannot verify transaction for a Payment Request with final status: {0}").format(pr.status)
+		)
 	if not pr.provider or not pr.provider_reference:
 		frappe.throw(_("Payment Request has no provider reference generated"))
 	if not pr.provider_account:
@@ -38,21 +77,13 @@ def verify_transaction(payment_request_name):
 	response = client.get(url)
 	parsed = provider_instance.parse_verification_response(response)
 	if parsed.get("amount") is not None and flt(parsed.get("amount")) > flt(pr.amount):
-		frappe.throw(_("Verification failed: Amount exceeds Payment Request amount"))
+		frappe.throw(_("Verification failed: Amount mismatch; payment exceeds Payment Request amount"))
 	if parsed.get("currency") and parsed.get("currency").upper() != pr.currency.upper():
 		frappe.throw(_("Verification failed: Currency mismatch"))
 
 	txn_ref = parsed.get("transaction_reference") or parsed.get("provider_reference")
 	prov_ref = parsed.get("provider_reference")
-	txn_name = (
-		frappe.db.get_value("EdgePay Payment Transaction", {"transaction_reference": txn_ref}, "name")
-		if txn_ref
-		else None
-	)
-	if not txn_name and prov_ref:
-		txn_name = frappe.db.get_value(
-			"EdgePay Payment Transaction", {"provider_reference": prov_ref}, "name"
-		)
+	txn_name = _find_transaction_name(pr.name, txn_ref, prov_ref)
 	txn = (
 		frappe.get_doc("EdgePay Payment Transaction", txn_name)
 		if txn_name
@@ -92,10 +123,21 @@ def verify_transaction(payment_request_name):
 		transition_attempt(attempt, "Successful", "Verification Successful", "verification", txn)
 	elif txn.status == "Failed" and attempt.status not in {"Successful", "Failed"}:
 		transition_attempt(attempt, "Failed", "Verification Failed", "verification", txn)
-	elif txn.status == "Pending" and attempt.status == "Initiated":
+	elif txn.status == "Pending" and attempt.status in {"Created", "Initiated"}:
 		transition_attempt(attempt, "Pending", "Verification Pending", "verification", txn)
 
 	totals = sync_payment_totals(pr.name)
+	pr.reload()
+	if txn.status == "Failed" and totals["net_paid_amount"] <= 0 and pr.status == "Initiated":
+		transition_request(
+			pr,
+			"Failed",
+			"Payment Verification Failed",
+			"verification",
+			attempt=attempt,
+			transaction=txn,
+		)
+
 	from edgepayv1.edgepay.services.connectors import notify_source_payment_status
 
 	notify_source_payment_status(pr.name, txn.name, event_source="verification")
