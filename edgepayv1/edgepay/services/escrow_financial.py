@@ -143,11 +143,14 @@ def request_escrow_refund(escrow_name: str, amount, reason: str, actor_reference
 		order_by="paid_on asc, creation asc",
 	)
 	for row in transactions:
-		completed = frappe.db.get_value(
-			"EdgePay Refund Request",
-			{"payment_transaction": row.name, "status": "Completed"},
-			"sum(amount)",
-		) or 0
+		completed = (
+			frappe.db.get_value(
+				"EdgePay Refund Request",
+				{"payment_transaction": row.name, "status": "Completed"},
+				"sum(amount)",
+			)
+			or 0
+		)
 		available = max(0, flt(row.amount) - flt(completed))
 		allocation = min(remaining, available)
 		if allocation <= 0:
@@ -238,7 +241,9 @@ def add_evidence(
 	evidence.file_url = file_url
 	evidence.description = description
 	evidence.occurred_on = now_datetime()
-	evidence.source_payload_json = json.dumps(redact_secrets(source_payload or {}), default=str, sort_keys=True)
+	evidence.source_payload_json = json.dumps(
+		redact_secrets(source_payload or {}), default=str, sort_keys=True
+	)
 	evidence.insert(ignore_permissions=True)
 	_record_event(
 		agreement,
