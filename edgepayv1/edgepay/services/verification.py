@@ -157,7 +157,7 @@ def verify_transaction(payment_request_name):
 
 
 @frappe.whitelist()
-def verify_payment_request_transaction(payment_request_name):
+def verify_payment_request_transaction(payment_request_name: str):
 	if not frappe.has_permission("EdgePay Payment Request", "write", doc=payment_request_name):
 		frappe.throw(
 			_("Not permitted to verify transaction for this Payment Request"), frappe.PermissionError
