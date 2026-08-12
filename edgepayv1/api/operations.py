@@ -7,16 +7,39 @@ from edgepayv1.api.permission import has_app_permission
 from edgepayv1.edgepay.services.merchant_context import get_default_merchant_context
 
 
-def _require_edgepay() -> str:
+def _edgepay_context() -> dict:
 	if not has_app_permission():
 		frappe.throw(_("You are not permitted to access EdgePay."), frappe.PermissionError)
-	merchant = get_default_merchant_context().get("merchant")
-	if not merchant:
-		frappe.throw(_("No active EdgePay merchant context is assigned to this user."), frappe.PermissionError)
-	return merchant
+	context = get_default_merchant_context()
+	return {
+		"merchant": context.get("merchant"),
+		"merchant_account": context.get("merchant_account"),
+		"merchant_branch": context.get("merchant_branch"),
+		"has_context": bool(context.get("merchant")),
+		"can_bootstrap": bool(context.get("can_bootstrap")),
+	}
 
 
-def _rows(doctype: str, merchant: str, fields: list[str], *, limit: int = 50, order_by: str = "modified desc") -> list[dict]:
+def _empty_context(context: dict, **collections) -> dict:
+	return {
+		"merchant": None,
+		"context_state": {
+			"has_context": False,
+			"can_bootstrap": bool(context.get("can_bootstrap")),
+			"message": _("No active EdgePay merchant context is assigned to this user."),
+		},
+		**collections,
+	}
+
+
+def _rows(
+	doctype: str,
+	merchant: str,
+	fields: list[str],
+	*,
+	limit: int = 50,
+	order_by: str = "modified desc",
+) -> list[dict]:
 	if not frappe.db.exists("DocType", doctype) or not frappe.has_permission(doctype, "read"):
 		return []
 	return frappe.get_list(
@@ -30,31 +53,77 @@ def _rows(doctype: str, merchant: str, fields: list[str], *, limit: int = 50, or
 
 @frappe.whitelist()
 def get_payments_context() -> dict:
-	merchant = _require_edgepay()
+	context = _edgepay_context()
+	merchant = context.get("merchant")
+	if not merchant:
+		return _empty_context(context, requests=[], attempts=[], events=[])
 	requests = _rows(
 		"EdgePay Payment Request",
 		merchant,
-		["name", "request_reference", "status", "amount", "paid_amount", "outstanding_amount", "currency", "customer_name", "source_app", "modified"],
+		[
+			"name",
+			"request_reference",
+			"status",
+			"amount",
+			"paid_amount",
+			"outstanding_amount",
+			"currency",
+			"customer_name",
+			"source_app",
+			"modified",
+		],
 	)
 	attempts = _rows(
 		"EdgePay Payment Attempt",
 		merchant,
-		["name", "payment_request", "attempt_number", "status", "payment_method", "provider_payment_reference", "modified"],
+		[
+			"name",
+			"payment_request",
+			"attempt_number",
+			"status",
+			"payment_method",
+			"provider_payment_reference",
+			"modified",
+		],
 		limit=30,
 	)
 	events = _rows(
 		"EdgePay Payment Event",
 		merchant,
-		["name", "payment_request", "payment_attempt", "event_type", "previous_status", "new_status", "event_source", "occurred_on"],
+		[
+			"name",
+			"payment_request",
+			"payment_attempt",
+			"event_type",
+			"previous_status",
+			"new_status",
+			"event_source",
+			"occurred_on",
+		],
 		limit=40,
 		order_by="occurred_on desc",
 	)
-	return {"merchant": merchant, "requests": requests, "attempts": attempts, "events": events}
+	return {
+		"merchant": merchant,
+		"context_state": {"has_context": True, "can_bootstrap": bool(context.get("can_bootstrap"))},
+		"requests": requests,
+		"attempts": attempts,
+		"events": events,
+	}
 
 
 @frappe.whitelist()
 def get_integrations_context() -> dict:
-	merchant = _require_edgepay()
+	context = _edgepay_context()
+	merchant = context.get("merchant")
+	if not merchant:
+		return _empty_context(
+			context,
+			provider_accounts=[],
+			api_clients=[],
+			delivery_endpoints=[],
+			deliveries=[],
+		)
 	providers = _rows(
 		"EdgePay Provider Account",
 		merchant,
@@ -81,6 +150,7 @@ def get_integrations_context() -> dict:
 	)
 	return {
 		"merchant": merchant,
+		"context_state": {"has_context": True, "can_bootstrap": bool(context.get("can_bootstrap"))},
 		"provider_accounts": providers,
 		"api_clients": clients,
 		"delivery_endpoints": endpoints,
@@ -90,11 +160,31 @@ def get_integrations_context() -> dict:
 
 @frappe.whitelist()
 def get_finance_context() -> dict:
-	merchant = _require_edgepay()
+	context = _edgepay_context()
+	merchant = context.get("merchant")
+	if not merchant:
+		return _empty_context(context, refunds=[], settlements=[], disputes=[], chargebacks=[])
 	return {
 		"merchant": merchant,
-		"refunds": _rows("EdgePay Refund Request", merchant, ["name", "payment_request", "amount", "currency", "status", "modified"]),
-		"settlements": _rows("EdgePay Settlement Batch", merchant, ["name", "provider_account", "status", "gross_amount", "net_amount", "currency", "modified"]),
-		"disputes": _rows("EdgePay Dispute", merchant, ["name", "payment_request", "payment_transaction", "amount", "currency", "status", "modified"]),
-		"chargebacks": _rows("EdgePay Chargeback", merchant, ["name", "payment_request", "payment_transaction", "amount", "currency", "status", "modified"]),
+		"context_state": {"has_context": True, "can_bootstrap": bool(context.get("can_bootstrap"))},
+		"refunds": _rows(
+			"EdgePay Refund Request",
+			merchant,
+			["name", "payment_request", "amount", "currency", "status", "modified"],
+		),
+		"settlements": _rows(
+			"EdgePay Settlement Batch",
+			merchant,
+			["name", "provider_account", "status", "gross_amount", "net_amount", "currency", "modified"],
+		),
+		"disputes": _rows(
+			"EdgePay Dispute",
+			merchant,
+			["name", "payment_request", "payment_transaction", "amount", "currency", "status", "modified"],
+		),
+		"chargebacks": _rows(
+			"EdgePay Chargeback",
+			merchant,
+			["name", "payment_request", "payment_transaction", "amount", "currency", "status", "modified"],
+		),
 	}
