@@ -22,9 +22,7 @@ def resolve_provider_account(provider, merchant=None, provider_account=None):
 	filters = {"provider": provider, "enabled": 1, "status": "Active"}
 	if merchant:
 		filters["merchant"] = merchant
-	accounts = frappe.get_all(
-		"EdgePay Provider Account", filters=filters, pluck="name", limit_page_length=2
-	)
+	accounts = frappe.get_all("EdgePay Provider Account", filters=filters, pluck="name", limit_page_length=2)
 	if not accounts:
 		frappe.throw(_("No enabled Provider Account is available for the selected Merchant and Provider"))
 	if not merchant and len(accounts) > 1:
