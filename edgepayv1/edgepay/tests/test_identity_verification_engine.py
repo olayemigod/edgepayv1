@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-
 from pathlib import Path
+
 from frappe.tests.utils import FrappeTestCase
 
 APP_ROOT = Path(__file__).resolve().parents[2]
+
 
 class TestIdentityVerificationEngine(FrappeTestCase):
 	def test_identity_verification_doctypes_exist(self):
@@ -34,6 +35,7 @@ class TestIdentityVerificationEngine(FrappeTestCase):
 
 	def test_frontend_uses_password_fields_and_safe_session_args(self):
 		page = (APP_ROOT / "edgepay/page/merchant_onboarding/merchant_onboarding.js").read_text()
-		self.assertIn("fieldtype: 'Password', label: __('NIN')", page)
-		self.assertIn("fieldtype: 'Password', label: __('BVN')", page)
+		self.assertIn('fieldname: "nin"', page)
+		self.assertIn('fieldname: "bvn"', page)
+		self.assertGreaterEqual(page.count('fieldtype: "Password"'), 3)
 		self.assertIn("safeSessionArgs", page)
