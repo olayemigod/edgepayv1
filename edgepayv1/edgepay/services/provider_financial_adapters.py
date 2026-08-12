@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-"""Provider-agnostic contracts for refunds and settlement operations."""
+"""Provider-agnostic contracts for refunds, payouts, and settlement operations."""
 
 import frappe
 from frappe import _
@@ -10,6 +9,12 @@ class BaseProviderFinancialAdapter:
 		raise NotImplementedError
 
 	def query_refund(self, refund_request):
+		raise NotImplementedError
+
+	def submit_payout(self, payout_attempt, escrow_agreement):
+		raise NotImplementedError
+
+	def query_payout(self, payout_attempt, escrow_agreement):
 		raise NotImplementedError
 
 	def fetch_settlement(self, provider_account, settlement_reference):
@@ -29,6 +34,20 @@ class SandboxProviderFinancialAdapter(BaseProviderFinancialAdapter):
 		return {
 			"status": "Completed",
 			"provider_refund_reference": refund_request.provider_refund_reference,
+		}
+
+	def submit_payout(self, payout_attempt, escrow_agreement):
+		return {
+			"status": "Processing",
+			"provider_payout_reference": f"SBX-PAYOUT-{payout_attempt.name}",
+			"escrow_reference": escrow_agreement.agreement_reference,
+		}
+
+	def query_payout(self, payout_attempt, escrow_agreement):
+		return {
+			"status": "Completed",
+			"provider_payout_reference": payout_attempt.provider_reference,
+			"escrow_reference": escrow_agreement.agreement_reference,
 		}
 
 	def fetch_settlement(self, provider_account, settlement_reference):
