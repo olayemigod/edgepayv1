@@ -9,7 +9,10 @@ export function mountEdgePayWorkspace(target, options = {}) {
 		...EdgePayWorkspace,
 		components: { ...runtime.components, ...(EdgePayWorkspace.components || {}) },
 		data() {
-			const base = typeof EdgePayWorkspace.data === "function" ? EdgePayWorkspace.data.call(this) : {};
+			const base =
+				typeof EdgePayWorkspace.data === "function"
+					? EdgePayWorkspace.data.call(this)
+					: {};
 			return { ...base, workspaceMode: options.mode || "home" };
 		},
 	};
