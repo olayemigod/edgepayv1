@@ -152,9 +152,8 @@ class TestVerification(FrappeTestCase):
 			verify_transaction(self.payment_request.name)
 		self.assertIn("disabled", str(context.exception).lower())
 
-	def test_invalid_final_status_blocks_verification(self):
-		for status in ["Paid", "Failed", "Expired", "Cancelled"]:
-			self.payment_request.status = status
+	def test_terminal_business_status_blocks_verification(self):
+		for status in ["Expired", "Cancelled", "Refunded"]:
 			self.payment_request.db_set("status", status)
 			with self.assertRaises(frappe.ValidationError) as context:
 				verify_transaction(self.payment_request.name)
@@ -164,7 +163,7 @@ class TestVerification(FrappeTestCase):
 			)
 
 	def test_no_external_http_calls(self):
-		set_client_override("monnify", MonnifyClient(self.provider))
+		set_client_override("monnify", MonnifyClient(self.provider, self.provider_account))
 		with self.assertRaises(frappe.ValidationError) as context:
 			verify_transaction(self.payment_request.name)
 		self.assertIn("external http calls are disabled", str(context.exception).lower())
