@@ -32,6 +32,12 @@ fixtures = [
 
 doctype_js = {"EdgePay Payment Request": "public/js/edgepay_payment_request.js"}
 
+doc_events = {
+	"EdgePay Payment Request": {
+		"on_update": "edgepayv1.edgepay.services.escrow.sync_from_payment_request",
+	}
+}
+
 scheduler_events = {
 	"cron": {
 		"*/5 * * * *": ["edgepayv1.edgepay.services.delivery_worker.process_pending_deliveries"],
@@ -66,6 +72,8 @@ permission_query_conditions = {
 	"EdgePay Fee Record": "edgepayv1.permissions.fee_record_query",
 	"EdgePay Settlement Batch": "edgepayv1.permissions.settlement_batch_query",
 	"EdgePay Settlement Item": "edgepayv1.permissions.settlement_item_query",
+	"EdgePay Escrow Agreement": "edgepayv1.permissions.escrow_agreement_query",
+	"EdgePay Escrow Event": "edgepayv1.permissions.escrow_event_query",
 	"EdgePay Webhook Event": "edgepayv1.permissions.webhook_event_query",
 	"EdgePay Status Handoff Event": "edgepayv1.permissions.handoff_event_query",
 }
@@ -99,6 +107,8 @@ has_permission = {
 		"EdgePay Fee Record",
 		"EdgePay Settlement Batch",
 		"EdgePay Settlement Item",
+		"EdgePay Escrow Agreement",
+		"EdgePay Escrow Event",
 		"EdgePay Webhook Event",
 		"EdgePay Status Handoff Event",
 	]
