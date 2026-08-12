@@ -25,8 +25,7 @@
 				items: [
 					{
 						label: "EdgePay Home",
-						description:
-							"Review payment activity, onboarding and integration readiness.",
+						description: "Review payment activity, onboarding and integration readiness.",
 						icon: "home",
 						route: "/app/edgepay-home",
 					},
@@ -44,19 +43,10 @@
 				icon: "wallet",
 				items: [
 					{
-						label: "Payment Requests",
-						icon: "list",
-						route: "/app/edgepay-payment-request",
-					},
-					{
-						label: "Payment Attempts",
+						label: "Payment Operations",
+						description: "Review merchant payment requests, attempts and events in one workspace.",
 						icon: "activity",
-						route: "/app/edgepay-payment-attempt",
-					},
-					{
-						label: "Payment Events",
-						icon: "report",
-						route: "/app/edgepay-payment-event",
+						route: "/app/edgepay-payments",
 					},
 				],
 			},
@@ -69,44 +59,26 @@
 				icon: "chart",
 				items: [
 					{
-						label: "Refund Requests",
-						icon: "undo",
-						route: "/app/edgepay-refund-request",
-					},
-					{
-						label: "Settlement Batches",
+						label: "Finance & Exceptions",
 						icon: "report",
-						route: "/app/edgepay-settlement-batch",
+						route: "/app/edgepay-finance",
 					},
-					{ label: "Disputes", icon: "warning", route: "/app/edgepay-dispute" },
-					{ label: "Chargebacks", icon: "alert", route: "/app/edgepay-chargeback" },
 				],
 			});
 		}
 
-		if (hasAnyRole(["EdgePay Admin", "EdgePay Manager"])) {
-			const integrationItems = [
-				{ label: "API Clients", icon: "key", route: "/app/edgepay-api-client" },
-				{
-					label: "Delivery Endpoints",
-					icon: "link",
-					route: "/app/edgepay-delivery-endpoint",
-				},
-			];
-			if (hasAnyRole(["EdgePay Admin"])) {
-				integrationItems.unshift({
-					label: "Provider Accounts",
-					description:
-						"Manage merchant provider-account readiness. Credentials remain protected.",
-					icon: "shield",
-					route: "/app/edgepay-provider-account",
-				});
-			}
+		if (hasAnyRole(["EdgePay Admin", "EdgePay Manager", "EdgePay Auditor"])) {
 			sections.push({
 				label: "Integrations",
-				description: "Manage signed API and delivery integration surfaces.",
+				description: "Review provider, API and delivery integration health.",
 				icon: "settings",
-				items: integrationItems,
+				items: [
+					{
+						label: "Integration Operations",
+						icon: "link",
+						route: "/app/edgepay-integrations",
+					},
+				],
 			});
 		}
 
