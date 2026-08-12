@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt
 
 from edgepayv1.edgepay.services.merchant_queries import validate_branch_context
-
 
 ALLOWED_STATUSES = {
 	"Draft",
@@ -76,4 +74,8 @@ class EdgePayEscrowAgreement(Document):
 			"name",
 		)
 		if duplicate:
-			frappe.throw(_("An active Escrow Agreement with this Idempotency Key already exists: {0}").format(duplicate))
+			frappe.throw(
+				_("An active Escrow Agreement with this Idempotency Key already exists: {0}").format(
+					duplicate
+				)
+			)
