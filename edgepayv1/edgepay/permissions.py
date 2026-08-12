@@ -31,6 +31,8 @@ MERCHANT_SCOPED_DOCTYPES = {
 	"EdgePay Settlement Item": "merchant",
 	"EdgePay Escrow Agreement": "merchant",
 	"EdgePay Escrow Event": "merchant",
+	"EdgePay Escrow Evidence": "merchant",
+	"EdgePay Escrow Payout Attempt": "merchant",
 	"EdgePay Webhook Event": "merchant",
 	"EdgePay Status Handoff Event": "merchant",
 }
@@ -118,6 +120,14 @@ def escrow_agreement_query(user=None):
 
 def escrow_event_query(user=None):
 	return merchant_permission_query("EdgePay Escrow Event", user)
+
+
+def escrow_evidence_query(user=None):
+	return merchant_permission_query("EdgePay Escrow Evidence", user)
+
+
+def escrow_payout_attempt_query(user=None):
+	return merchant_permission_query("EdgePay Escrow Payout Attempt", user)
 
 
 def api_client_query(user=None):
