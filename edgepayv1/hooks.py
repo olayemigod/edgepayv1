@@ -34,7 +34,7 @@ doctype_js = {"EdgePay Payment Request": "public/js/edgepay_payment_request.js"}
 
 doc_events = {
 	"EdgePay Payment Request": {
-		"on_update": "edgepayv1.edgepay.services.escrow.sync_from_payment_request",
+		"on_update": "edgepayv1.edgepay.services.escrow_hooks.sync_escrow_funding",
 	}
 }
 
