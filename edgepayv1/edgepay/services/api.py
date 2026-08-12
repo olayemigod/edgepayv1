@@ -302,9 +302,7 @@ def handle_checkout_callback(
 			),
 		}
 	except Exception as exc:
-		frappe.log_error(
-			f"EdgePay Callback Error: {redact_secrets(str(exc))}", "EdgePay API Callback"
-		)
+		frappe.log_error(f"EdgePay Callback Error: {redact_secrets(str(exc))}", "EdgePay API Callback")
 		return {
 			"ok": False,
 			"status": "error",
