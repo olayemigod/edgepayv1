@@ -8,9 +8,7 @@ class DatabaseStateBackup:
 		self.saved_settings_provider = None
 
 	def backup(self):
-		providers = frappe.get_all(
-			"EdgePay Provider", filters={"provider_code": "monnify"}, fields=["name"]
-		)
+		providers = frappe.get_all("EdgePay Provider", filters={"provider_code": "monnify"}, fields=["name"])
 		for provider in providers:
 			try:
 				doc = frappe.get_doc("EdgePay Provider", provider.name)
