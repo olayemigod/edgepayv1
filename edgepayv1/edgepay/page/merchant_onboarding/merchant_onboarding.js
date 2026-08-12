@@ -1,20 +1,185 @@
-frappe.pages["merchant-onboarding"].on_page_load = function (wrapper) {
-	wrapper.page = frappe.ui.make_app_page({
-		parent: wrapper,
-		title: __("Merchant Onboarding"),
-		single_column: true,
-	});
-};
-
-frappe.pages["merchant-onboarding"].on_page_show = function (wrapper) {
+function edgepayMountMerchantOnboarding(wrapper) {
 	const page = wrapper.page;
 	$(page.body).empty();
+
 	const root = document.createElement("div");
 	root.className = "edgepay-onboarding p-4";
 	root.dataset.edgeProduct = "edgepay";
 	page.body.appendChild(root);
+
 	let pageData = {};
 	const esc = (value) => frappe.utils.escape_html(String(value ?? ""));
+
+	function openCreateMerchantDialog() {
+		const dialog = new frappe.ui.Dialog({
+			title: __("Create EdgePay Merchant"),
+			fields: [
+				{
+					fieldname: "merchant_name",
+					fieldtype: "Data",
+					label: __("Merchant / Trading Name"),
+					reqd: 1,
+				},
+				{
+					fieldname: "legal_name",
+					fieldtype: "Data",
+					label: __("Legal Business Name"),
+					reqd: 1,
+				},
+				{
+					fieldname: "email",
+					fieldtype: "Data",
+					options: "Email",
+					label: __("Business Email"),
+				},
+				{ fieldname: "phone", fieldtype: "Data", label: __("Business Phone") },
+				{
+					fieldname: "country",
+					fieldtype: "Link",
+					options: "Country",
+					label: __("Country"),
+					default: "Nigeria",
+					reqd: 1,
+				},
+				{
+					fieldname: "default_currency",
+					fieldtype: "Link",
+					options: "Currency",
+					label: __("Default Currency"),
+					default: "NGN",
+					reqd: 1,
+				},
+			],
+			primary_action_label: __("Create Merchant"),
+			primary_action(values) {
+				dialog.get_primary_btn().prop("disabled", true);
+				frappe.call({
+					method: "edgepayv1.edgepay.page.merchant_onboarding.merchant_onboarding.create_first_merchant",
+					args: values,
+					callback(response) {
+						if (!(response.message || {}).merchant) return;
+						dialog.hide();
+						frappe.show_alert({
+							message: __("Merchant created. Continue onboarding and verification."),
+							indicator: "green",
+						});
+						refresh();
+					},
+					always() {
+						dialog.get_primary_btn().prop("disabled", false);
+					},
+				});
+			},
+		});
+		dialog.show();
+	}
+
+	function openIdentityDialog() {
+		if (!pageData.merchant) return;
+		const dialog = new frappe.ui.Dialog({
+			title: __("Representative Identity Verification"),
+			fields: [
+				{
+					fieldname: "merchant_verification",
+					fieldtype: "Link",
+					options: "EdgePay Merchant Verification",
+					label: __("Merchant Verification"),
+					reqd: 1,
+					get_query: () => ({ filters: { merchant: pageData.merchant.name } }),
+				},
+				{
+					fieldname: "provider",
+					fieldtype: "Link",
+					options: "EdgePay Verification Provider",
+					label: __("Verification Provider"),
+					reqd: 1,
+					get_query: () => ({ filters: { enabled: 1 } }),
+				},
+				{ fieldname: "first_name", fieldtype: "Data", label: __("First Name"), reqd: 1 },
+				{ fieldname: "middle_name", fieldtype: "Data", label: __("Middle Name") },
+				{ fieldname: "last_name", fieldtype: "Data", label: __("Surname"), reqd: 1 },
+				{ fieldname: "date_of_birth", fieldtype: "Date", label: __("Date of Birth"), reqd: 1 },
+				{ fieldname: "phone", fieldtype: "Data", label: __("Phone"), reqd: 1 },
+				{
+					fieldname: "selfie_file",
+					fieldtype: "Attach Image",
+					label: __("Live Selfie / Photo"),
+					reqd: 1,
+					description: __("A production provider must replace simple upload with its camera liveness SDK."),
+				},
+				{
+					fieldname: "consent",
+					fieldtype: "Check",
+					label: __("I consent to NIN, BVN, DOB, liveness and face verification for merchant onboarding."),
+					reqd: 1,
+				},
+				{
+					fieldname: "nin",
+					fieldtype: "Password",
+					label: __("NIN"),
+					reqd: 1,
+					description: __("Used only for this provider request and not stored by EdgePay."),
+				},
+				{
+					fieldname: "bvn",
+					fieldtype: "Password",
+					label: __("BVN"),
+					reqd: 1,
+					description: __("Used only for this provider request and not stored by EdgePay."),
+				},
+				{
+					fieldname: "bvn_consent_token",
+					fieldtype: "Password",
+					label: __("BVN Consent Token"),
+					reqd: 1,
+				},
+			],
+			primary_action_label: __("Verify Identity"),
+			primary_action(values) {
+				if (!values.consent) {
+					frappe.msgprint(__("Consent is required."));
+					return;
+				}
+				const safeSessionArgs = {
+					merchant_verification: values.merchant_verification,
+					provider: values.provider,
+					first_name: values.first_name,
+					middle_name: values.middle_name,
+					last_name: values.last_name,
+					date_of_birth: values.date_of_birth,
+					phone: values.phone,
+					selfie_file: values.selfie_file,
+				};
+				frappe.call({
+					method: "edgepayv1.edgepay.services.identity_verification_api.create_identity_session",
+					args: safeSessionArgs,
+					callback(created) {
+						const session = created.message && created.message.session;
+						if (!session) return;
+						frappe.call({
+							method: "edgepayv1.edgepay.services.identity_verification_api.submit_identity_values",
+							args: {
+								session_name: session,
+								nin: values.nin,
+								bvn: values.bvn,
+								bvn_consent_token: values.bvn_consent_token,
+							},
+							callback(result) {
+								dialog.hide();
+								frappe.msgprint(
+									__("Identity verification status: {0}", [
+										(result.message || {}).status || __("Unknown"),
+									])
+								);
+								refresh();
+							},
+						});
+					},
+				});
+			},
+		});
+		dialog.show();
+	}
 
 	function renderNoContext() {
 		const bootstrap = pageData.bootstrap || {};
@@ -51,11 +216,18 @@ frappe.pages["merchant-onboarding"].on_page_show = function (wrapper) {
 		const merchant = pageData.merchant;
 		const readiness = pageData.readiness || {};
 		const checks = (readiness.checks || [])
-			.map((check) => `<li class="list-group-item d-flex justify-content-between align-items-center"><span>${esc(check.label)}</span><span class="indicator-pill ${check.complete ? "green" : "orange"}">${esc(check.complete ? __("Complete") : __("Pending"))}</span></li>`)
+			.map(
+				(check) =>
+					`<li class="list-group-item d-flex justify-content-between align-items-center"><span>${esc(check.label)}</span><span class="indicator-pill ${check.complete ? "green" : "orange"}">${esc(check.complete ? __("Complete") : __("Pending"))}</span></li>`
+			)
 			.join("");
-		const providers = (pageData.provider_accounts || [])
-			.map((row) => `<div class="border rounded p-3 mb-2"><strong>${esc(row.name)}</strong><div class="text-muted small">${esc(row.provider || "")} · ${esc(row.environment || "")} · ${esc(row.status || "")}</div></div>`)
-			.join("") || `<div class="text-muted">${esc(__("No provider accounts configured yet."))}</div>`;
+		const providers =
+			(pageData.provider_accounts || [])
+				.map(
+					(row) =>
+						`<div class="border rounded p-3 mb-2"><strong>${esc(row.name)}</strong><div class="text-muted small">${esc(row.provider || "")} · ${esc(row.environment || "")} · ${esc(row.status || "")}</div></div>`
+				)
+				.join("") || `<div class="text-muted">${esc(__("No provider accounts configured yet."))}</div>`;
 		root.innerHTML = `
 			<div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
 				<div><h2 class="mb-1">${esc(merchant.merchant_name || merchant.name)}</h2><p class="text-muted mb-0">${esc(__("Complete merchant identity, verification and provider readiness."))}</p></div>
@@ -85,93 +257,24 @@ frappe.pages["merchant-onboarding"].on_page_show = function (wrapper) {
 		});
 	}
 
-	function openCreateMerchantDialog() {
-		const dialog = new frappe.ui.Dialog({
-			title: __("Create EdgePay Merchant"),
-			fields: [
-				{ fieldname: "merchant_name", fieldtype: "Data", label: __("Merchant / Trading Name"), reqd: 1 },
-				{ fieldname: "legal_name", fieldtype: "Data", label: __("Legal Business Name"), reqd: 1 },
-				{ fieldname: "email", fieldtype: "Data", options: "Email", label: __("Business Email") },
-				{ fieldname: "phone", fieldtype: "Data", label: __("Business Phone") },
-				{ fieldname: "country", fieldtype: "Link", options: "Country", label: __("Country"), default: "Nigeria", reqd: 1 },
-				{ fieldname: "default_currency", fieldtype: "Link", options: "Currency", label: __("Default Currency"), default: "NGN", reqd: 1 },
-			],
-			primary_action_label: __("Create Merchant"),
-			primary_action(values) {
-				dialog.get_primary_btn().prop("disabled", true);
-				frappe.call({
-					method: "edgepayv1.edgepay.page.merchant_onboarding.merchant_onboarding.create_first_merchant",
-					args: values,
-					callback(response) {
-						if (!(response.message || {}).merchant) return;
-						dialog.hide();
-						frappe.show_alert({ message: __("Merchant created. Continue onboarding and verification."), indicator: "green" });
-						refresh();
-					},
-					always() {
-						dialog.get_primary_btn().prop("disabled", false);
-					},
-				});
-			},
-		});
-		dialog.show();
-	}
+	wrapper.edgepayOnboardingRefresh = refresh;
+	refresh();
+	frappe.require("edgesuite_ui.bundle.js", () => {});
+}
 
-	function openIdentityDialog() {
-		if (!pageData.merchant) return;
-		const dialog = new frappe.ui.Dialog({
-			title: __("Representative Identity Verification"),
-			fields: [
-				{ fieldname: "merchant_verification", fieldtype: "Link", options: "EdgePay Merchant Verification", label: __("Merchant Verification"), reqd: 1, get_query: () => ({ filters: { merchant: pageData.merchant.name } }) },
-				{ fieldname: "provider", fieldtype: "Link", options: "EdgePay Verification Provider", label: __("Verification Provider"), reqd: 1, get_query: () => ({ filters: { enabled: 1 } }) },
-				{ fieldname: "first_name", fieldtype: "Data", label: __("First Name"), reqd: 1 },
-				{ fieldname: "middle_name", fieldtype: "Data", label: __("Middle Name") },
-				{ fieldname: "last_name", fieldtype: "Data", label: __("Surname"), reqd: 1 },
-				{ fieldname: "date_of_birth", fieldtype: "Date", label: __("Date of Birth"), reqd: 1 },
-				{ fieldname: "phone", fieldtype: "Data", label: __("Phone"), reqd: 1 },
-				{ fieldname: "selfie_file", fieldtype: "Attach Image", label: __("Live Selfie / Photo"), reqd: 1, description: __("A production provider must replace simple upload with its camera liveness SDK.") },
-				{ fieldname: "consent", fieldtype: "Check", label: __("I consent to NIN, BVN, DOB, liveness and face verification for merchant onboarding."), reqd: 1 },
-				{ fieldname: "nin", fieldtype: "Password", label: __("NIN"), reqd: 1, description: __("Used only for this provider request and not stored by EdgePay.") },
-				{ fieldname: "bvn", fieldtype: "Password", label: __("BVN"), reqd: 1, description: __("Used only for this provider request and not stored by EdgePay.") },
-				{ fieldname: "bvn_consent_token", fieldtype: "Password", label: __("BVN Consent Token"), reqd: 1 },
-			],
-			primary_action_label: __("Verify Identity"),
-			primary_action(values) {
-				if (!values.consent) {
-					frappe.msgprint(__("Consent is required."));
-					return;
-				}
-				const safeSessionArgs = {
-					merchant_verification: values.merchant_verification,
-					provider: values.provider,
-					first_name: values.first_name,
-					middle_name: values.middle_name,
-					last_name: values.last_name,
-					date_of_birth: values.date_of_birth,
-					phone: values.phone,
-					selfie_file: values.selfie_file,
-				};
-				frappe.call({
-					method: "edgepayv1.edgepay.services.identity_verification_api.create_identity_session",
-					args: safeSessionArgs,
-					callback(created) {
-						const session = created.message && created.message.session;
-						if (!session) return;
-						frappe.call({
-							method: "edgepayv1.edgepay.services.identity_verification_api.submit_identity_values",
-							args: { session_name: session, nin: values.nin, bvn: values.bvn, bvn_consent_token: values.bvn_consent_token },
-							callback(result) {
-								dialog.hide();
-								frappe.msgprint(__("Identity verification status: {0}", [(result.message || {}).status || __("Unknown")]));
-								refresh();
-							},
-						});
-					},
-				});
-			},
-		});
-		dialog.show();
-	}
+frappe.pages["merchant-onboarding"].on_page_load = function (wrapper) {
+	wrapper.page = frappe.ui.make_app_page({
+		parent: wrapper,
+		title: __("Merchant Onboarding"),
+		single_column: true,
+	});
+	edgepayMountMerchantOnboarding(wrapper);
+};
 
-	frappe.require("edgesuite_ui.bundle.js", () => refresh());
+frappe.pages["merchant-onboarding"].on_page_show = function (wrapper) {
+	if (wrapper.edgepayOnboardingRefresh) {
+		wrapper.edgepayOnboardingRefresh();
+		return;
+	}
+	edgepayMountMerchantOnboarding(wrapper);
 };
