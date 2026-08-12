@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 import frappe
 from frappe import _
 
 from edgepayv1.edgepay.services.authorization import require_merchant_access
-
 
 PLATFORM_BOOTSTRAP_ROLES = {"EdgePay Admin"}
 
@@ -27,7 +25,10 @@ def get_default_merchant_context(user=None):
 	)
 	if not membership:
 		membership = frappe.db.get_value(
-			"EdgePay Merchant User", {"user": user, "active": 1}, ["merchant", "name"], as_dict=True
+			"EdgePay Merchant User",
+			{"user": user, "active": 1},
+			["merchant", "name"],
+			as_dict=True,
 		)
 	if not membership:
 		return {
@@ -44,7 +45,9 @@ def get_default_merchant_context(user=None):
 	)
 	if not account:
 		account = frappe.db.get_value(
-			"EdgePay Merchant Account", {"merchant": membership.merchant, "status": "Active"}, "name"
+			"EdgePay Merchant Account",
+			{"merchant": membership.merchant, "status": "Active"},
+			"name",
 		)
 	branch = (
 		frappe.db.get_value(
