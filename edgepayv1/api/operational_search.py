@@ -120,14 +120,26 @@ def search_edgepay_operations(query: str = "", page_length: int | str = 20) -> l
 				kind="Payment Request",
 				label=row.get("customer_name") or row.get("request_reference") or row.get("name"),
 				reference=row.get("request_reference") or row.get("name"),
-				description_parts=(row.get("status"), row.get("amount"), row.get("currency"), row.get("source_app")),
+				description_parts=(
+					row.get("status"),
+					row.get("amount"),
+					row.get("currency"),
+					row.get("source_app"),
+				),
 			)
 		)
 
 	for row in _rows(
 		"EdgePay Payment Attempt",
 		merchant,
-		["name", "payment_request", "provider_payment_reference", "status", "payment_method", "attempt_number"],
+		[
+			"name",
+			"payment_request",
+			"provider_payment_reference",
+			"status",
+			"payment_method",
+			"attempt_number",
+		],
 	):
 		candidates.append(
 			_candidate(
@@ -143,7 +155,15 @@ def search_edgepay_operations(query: str = "", page_length: int | str = 20) -> l
 	for row in _rows(
 		"EdgePay Payment Transaction",
 		merchant,
-		["name", "payment_request", "transaction_reference", "provider_reference", "status", "amount", "currency"],
+		[
+			"name",
+			"payment_request",
+			"transaction_reference",
+			"provider_reference",
+			"status",
+			"amount",
+			"currency",
+		],
 	):
 		candidates.append(
 			_candidate(
@@ -159,9 +179,21 @@ def search_edgepay_operations(query: str = "", page_length: int | str = 20) -> l
 
 	for doctype, kind, fields in (
 		("EdgePay Refund Request", "Refund", ["name", "payment_request", "status", "amount", "currency"]),
-		("EdgePay Settlement Batch", "Settlement", ["name", "provider_account", "status", "gross_amount", "net_amount", "currency"]),
-		("EdgePay Dispute", "Dispute", ["name", "payment_request", "payment_transaction", "status", "amount", "currency"]),
-		("EdgePay Chargeback", "Chargeback", ["name", "payment_request", "payment_transaction", "status", "amount", "currency"]),
+		(
+			"EdgePay Settlement Batch",
+			"Settlement",
+			["name", "provider_account", "status", "gross_amount", "net_amount", "currency"],
+		),
+		(
+			"EdgePay Dispute",
+			"Dispute",
+			["name", "payment_request", "payment_transaction", "status", "amount", "currency"],
+		),
+		(
+			"EdgePay Chargeback",
+			"Chargeback",
+			["name", "payment_request", "payment_transaction", "status", "amount", "currency"],
+		),
 	):
 		for row in _rows(doctype, merchant, fields):
 			candidates.append(
@@ -171,7 +203,13 @@ def search_edgepay_operations(query: str = "", page_length: int | str = 20) -> l
 					label=row.get("payment_request") or row.get("provider_account") or row.get("name"),
 					reference=row.get("payment_request") or row.get("payment_transaction") or row.get("name"),
 					transaction_reference=row.get("payment_transaction"),
-					description_parts=(row.get("status"), row.get("amount"), row.get("gross_amount"), row.get("net_amount"), row.get("currency")),
+					description_parts=(
+						row.get("status"),
+						row.get("amount"),
+						row.get("gross_amount"),
+						row.get("net_amount"),
+						row.get("currency"),
+					),
 				)
 			)
 
