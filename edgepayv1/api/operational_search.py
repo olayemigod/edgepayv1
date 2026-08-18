@@ -9,6 +9,7 @@ from edgepayv1.api.operations import _edgepay_context
 
 CANDIDATE_LIMIT = 100
 MAX_RESULTS = 50
+MAX_ANCHORS = 4
 
 
 def _ranker():
@@ -23,23 +24,99 @@ def _limit(value: int | str | None) -> int:
 	return min(max(cint(value) or 20, 1), MAX_RESULTS)
 
 
-def _rows(doctype: str, merchant: str, fields: list[str], order_by: str = "modified desc") -> list[dict]:
+def _candidate_anchors(query: str) -> tuple[str, ...]:
+	term = " ".join(str(query or "").strip().casefold().split())
+	if not term:
+		return ()
+	anchors = [term]
+	for token in term.split():
+		if len(token) >= 3:
+			anchors.append(token[:3])
+		if len(token) >= 2:
+			anchors.append(token[-2:])
+	unique: list[str] = []
+	for anchor in anchors:
+		if anchor and anchor not in unique:
+			unique.append(anchor)
+		if len(unique) >= MAX_ANCHORS:
+			break
+	return tuple(unique)
+
+
+def _rows(
+	doctype: str,
+	merchant: str,
+	fields: list[str],
+	*,
+	query: str = "",
+	search_fields: tuple[str, ...] = ("name",),
+	order_by: str = "modified desc",
+) -> list[dict]:
 	if not frappe.db.exists("DocType", doctype) or not frappe.has_permission(doctype, "read"):
 		return []
 	meta = frappe.get_meta(doctype)
 	available = [fieldname for fieldname in fields if fieldname == "name" or meta.has_field(fieldname)]
 	if "name" not in available:
 		available.insert(0, "name")
-	return [
-		dict(row)
-		for row in frappe.get_list(
+	available_search = tuple(
+		fieldname
+		for fieldname in dict.fromkeys(("name", *search_fields))
+		if fieldname == "name" or meta.has_field(fieldname)
+	)
+	search_text = str(query or "").strip()
+	if not search_text:
+		return [
+			dict(row)
+			for row in frappe.get_list(
+				doctype,
+				filters={"merchant": merchant},
+				fields=available,
+				order_by=order_by,
+				limit_page_length=CANDIDATE_LIMIT,
+			)
+		]
+
+	rows: list[dict] = []
+	seen: set[str] = set()
+
+	exact = frappe.get_list(
+		doctype,
+		filters={"merchant": merchant},
+		or_filters={fieldname: search_text for fieldname in available_search},
+		fields=available,
+		order_by=order_by,
+		limit_page_length=CANDIDATE_LIMIT,
+	)
+	for source in exact:
+		row = dict(source)
+		name = str(row.get("name") or "")
+		if name and name not in seen:
+			seen.add(name)
+			rows.append(row)
+
+	for anchor in _candidate_anchors(search_text):
+		remaining = CANDIDATE_LIMIT - len(rows)
+		if remaining <= 0:
+			break
+		matches = frappe.get_list(
 			doctype,
 			filters={"merchant": merchant},
+			or_filters={fieldname: ["like", f"%{anchor}%"] for fieldname in available_search},
 			fields=available,
 			order_by=order_by,
-			limit_page_length=CANDIDATE_LIMIT,
+			limit_page_length=remaining,
 		)
-	]
+		for source in matches:
+			row = dict(source)
+			name = str(row.get("name") or "")
+			if not name or name in seen:
+				continue
+			seen.add(name)
+			rows.append(row)
+			if len(rows) >= CANDIDATE_LIMIT:
+				break
+
+	return rows
 
 
 def _fallback_rank(rows: list[dict[str, Any]], query: str, limit: int) -> list[dict[str, Any]]:
@@ -108,11 +185,14 @@ def search_edgepay_operations(query: str = "", page_length: int | str = 20) -> l
 	if not merchant:
 		return []
 
+	search_text = str(query or "").strip()
 	candidates: list[dict] = []
 	for row in _rows(
 		"EdgePay Payment Request",
 		merchant,
 		["name", "request_reference", "customer_name", "status", "amount", "currency", "source_app"],
+		query=search_text,
+		search_fields=("request_reference", "customer_name", "source_app"),
 	):
 		candidates.append(
 			_candidate(
@@ -140,6 +220,8 @@ def search_edgepay_operations(query: str = "", page_length: int | str = 20) -> l
 			"payment_method",
 			"attempt_number",
 		],
+		query=search_text,
+		search_fields=("payment_request", "provider_payment_reference", "payment_method"),
 	):
 		candidates.append(
 			_candidate(
@@ -164,6 +246,8 @@ def search_edgepay_operations(query: str = "", page_length: int | str = 20) -> l
 			"amount",
 			"currency",
 		],
+		query=search_text,
+		search_fields=("payment_request", "transaction_reference", "provider_reference"),
 	):
 		candidates.append(
 			_candidate(
@@ -177,25 +261,39 @@ def search_edgepay_operations(query: str = "", page_length: int | str = 20) -> l
 			)
 		)
 
-	for doctype, kind, fields in (
-		("EdgePay Refund Request", "Refund", ["name", "payment_request", "status", "amount", "currency"]),
+	for doctype, kind, fields, search_fields in (
+		(
+			"EdgePay Refund Request",
+			"Refund",
+			["name", "payment_request", "status", "amount", "currency"],
+			("payment_request",),
+		),
 		(
 			"EdgePay Settlement Batch",
 			"Settlement",
 			["name", "provider_account", "status", "gross_amount", "net_amount", "currency"],
+			("provider_account",),
 		),
 		(
 			"EdgePay Dispute",
 			"Dispute",
 			["name", "payment_request", "payment_transaction", "status", "amount", "currency"],
+			("payment_request", "payment_transaction"),
 		),
 		(
 			"EdgePay Chargeback",
 			"Chargeback",
 			["name", "payment_request", "payment_transaction", "status", "amount", "currency"],
+			("payment_request", "payment_transaction"),
 		),
 	):
-		for row in _rows(doctype, merchant, fields):
+		for row in _rows(
+			doctype,
+			merchant,
+			fields,
+			query=search_text,
+			search_fields=search_fields,
+		):
 			candidates.append(
 				_candidate(
 					row,
@@ -213,4 +311,4 @@ def search_edgepay_operations(query: str = "", page_length: int | str = 20) -> l
 				)
 			)
 
-	return _rank(candidates, query, _limit(page_length))
+	return _rank(candidates, search_text, _limit(page_length))
