@@ -1,7 +1,25 @@
-# -*- coding: utf-8 -*-
+import json
+
 import frappe
 from frappe import _
-import json
+
+from edgepayv1.edgepay.services.authorization import (
+	require_authenticated_user,
+	require_doctype_permission,
+	require_payment_request_access,
+	require_payment_transaction_access,
+	require_platform_configuration_access,
+	require_platform_operations_access,
+	require_provider_access,
+	require_provider_account_access,
+)
+from edgepayv1.edgepay.services.providers.registry import get_provider_instance
+from edgepayv1.edgepay.services.security import redact_secrets
+
+
+def _error_response(exc):
+	return {"ok": False, "status": "error", "message": redact_secrets(str(exc)), "data": None}
+
 
 def resolve_payment_request_by_ref(ref):
 	if not ref:
@@ -9,353 +27,209 @@ def resolve_payment_request_by_ref(ref):
 	if frappe.db.exists("EdgePay Payment Request", ref):
 		return ref
 	if "-" in ref:
-		possible_pr = ref.rsplit('-', 1)[0]
+		possible_pr = ref.rsplit("-", 1)[0]
 		if frappe.db.exists("EdgePay Payment Request", possible_pr):
 			return possible_pr
-	
-	# Try lookup by request_reference
 	pr_name = frappe.db.get_value("EdgePay Payment Request", {"request_reference": ref}, "name")
 	if pr_name:
 		return pr_name
-		
 	if "-" in ref:
-		possible_req = ref.rsplit('-', 1)[0]
-		pr_name = frappe.db.get_value("EdgePay Payment Request", {"request_reference": possible_req}, "name")
-		if pr_name:
-			return pr_name
+		possible_req = ref.rsplit("-", 1)[0]
+		return frappe.db.get_value("EdgePay Payment Request", {"request_reference": possible_req}, "name")
 	return None
-from edgepayv1.edgepay.services.providers.registry import get_provider_instance
+
 
 @frappe.whitelist()
-def validate_provider_configuration(provider_name):
-	"""
-	Validates local provider configuration without making external calls.
-	"""
+def validate_provider_configuration(provider_name: str, provider_account: str | None = None):
 	try:
-		provider = get_provider_instance(provider_name)
+		require_platform_configuration_access()
+		provider_doc = require_provider_access(provider_name, ptype="read")
+		account = None
+		if provider_account:
+			account = require_provider_account_access(provider_account, ptype="read")
+			if account.provider != provider_doc.name:
+				frappe.throw(_("Provider Account does not match the selected Provider"))
+		provider = get_provider_instance(provider_doc, provider_account=account)
 		provider.validate_configuration()
 		return {"status": "success", "message": "Configuration is valid"}
-	except Exception as e:
-		return {"status": "error", "message": str(e)}
+	except Exception as exc:
+		return {"status": "error", "message": redact_secrets(str(exc))}
+
 
 @frappe.whitelist()
-def get_provider_health(provider_name):
-	"""
-	Validates local provider health/readiness.
-	"""
+def get_provider_health(provider_name: str):
 	try:
+		require_platform_configuration_access()
+		require_provider_access(provider_name, ptype="read")
 		provider = get_provider_instance(provider_name)
 		provider.validate_configuration()
 		return {"status": "healthy", "provider": provider.get_provider_code()}
-	except Exception as e:
-		return {"status": "unhealthy", "error": str(e)}
+	except Exception as exc:
+		return {"status": "unhealthy", "error": redact_secrets(str(exc))}
+
 
 @frappe.whitelist()
-def validate_live_provider_readiness(provider_name):
-	"""
-	Returns a safe diagnostics report about provider readiness for live calls.
-	Never returns actual keys/tokens.
-	"""
+def validate_live_provider_readiness(provider_name: str, provider_account: str | None = None):
 	try:
-		if not frappe.db.exists("EdgePay Provider", provider_name):
-			frappe.throw(_("Provider {0} not found").format(provider_name))
-
-		provider_doc = frappe.get_doc("EdgePay Provider", provider_name)
+		require_platform_configuration_access()
+		provider_doc = require_provider_access(provider_name, ptype="read")
+		if not provider_account:
+			frappe.throw(_("Provider Account is required for merchant credential readiness"))
+		account = require_provider_account_access(provider_account, ptype="read")
+		if account.provider != provider_doc.name:
+			frappe.throw(_("Provider Account does not match the selected Provider"))
 		settings = frappe.get_doc("EdgePay Settings")
-
-		# Safe check of attributes without returning actual passwords
-		api_key_present = False
-		if provider_doc.api_key:
-			try:
-				api_key_present = bool(provider_doc.get_password("api_key"))
-			except Exception:
-				pass
-
-		secret_key_present = False
-		if provider_doc.secret_key:
-			try:
-				secret_key_present = bool(provider_doc.get_password("secret_key"))
-			except Exception:
-				pass
-
+		api_key_present = bool(account.get_password("api_key", raise_exception=False))
+		secret_key_present = bool(account.get_password("secret_key", raise_exception=False))
 		return {
 			"provider_name": provider_name,
+			"provider_account": account.name,
 			"provider_enabled": bool(provider_doc.enabled),
-			"sandbox_mode": bool(provider_doc.sandbox_mode or settings.sandbox_mode),
-			"contract_code_present": bool(getattr(provider_doc, "contract_code", None)),
+			"provider_account_enabled": bool(account.enabled),
+			"provider_account_status": account.status,
+			"environment": account.environment,
+			"sandbox_mode": account.environment == "Sandbox",
+			"contract_code_present": bool(account.contract_code),
 			"api_key_present": api_key_present,
 			"secret_key_present": secret_key_present,
 			"external_calls_enabled": bool(getattr(settings, "allow_external_http_calls", 0)),
-			"edgepay_enabled": bool(settings.enable_edgepay)
+			"edgepay_enabled": bool(settings.enable_edgepay),
 		}
-	except Exception as e:
-		return {"status": "error", "message": str(e)}
+	except Exception as exc:
+		return {"status": "error", "message": redact_secrets(str(exc))}
+
 
 @frappe.whitelist()
 def create_payment_request(
-	provider, amount, currency, customer_name, customer_email,
-	customer_phone=None, payment_purpose=None, source_app=None,
-	source_doctype=None, source_name=None, expires_on=None,
-	metadata_json=None, idempotency_key=None, ignore_auth=False
+	provider: str,
+	amount: float | str,
+	currency: str,
+	customer_name: str,
+	customer_email: str,
+	customer_phone: str | None = None,
+	payment_purpose: str | None = None,
+	source_app: str | None = None,
+	source_doctype: str | None = None,
+	source_name: str | None = None,
+	expires_on: str | None = None,
+	metadata_json: str | dict | None = None,
+	idempotency_key: str | None = None,
 ):
-	"""
-	Whitelisted API to safely create a new Payment Request.
-	Requires authenticated access. Enforces safe return fields and idempotency.
-	"""
+	"""Authenticated public wrapper for Payment Request creation."""
 	try:
-		if not ignore_auth and frappe.session.user == "Guest":
-			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
-		from edgepayv1.edgepay.services.security import redact_secrets
-		from edgepayv1.edgepay.services.checkout import check_and_mark_expired
-		from frappe.utils import flt
+		require_authenticated_user()
+		require_doctype_permission("EdgePay Payment Request", ptype="create")
+		require_provider_access(provider, ptype="read")
+		from edgepayv1.edgepay.services.payment_requests import create_payment_request_record
 
-		# 1. Validate required attributes
-		if not amount or flt(amount) <= 0:
-			frappe.throw(_("Amount must be greater than zero"))
-		if not currency:
-			frappe.throw(_("Currency is required"))
-		if not provider:
-			frappe.throw(_("Provider is required"))
+		return create_payment_request_record(
+			provider=provider,
+			amount=amount,
+			currency=currency,
+			customer_name=customer_name,
+			customer_email=customer_email,
+			customer_phone=customer_phone,
+			payment_purpose=payment_purpose,
+			source_app=source_app,
+			source_doctype=source_doctype,
+			source_name=source_name,
+			expires_on=expires_on,
+			metadata_json=metadata_json,
+			idempotency_key=idempotency_key,
+		)
+	except Exception as exc:
+		return _error_response(exc)
 
-		# Check if provider exists and is enabled
-		if not frappe.db.exists("EdgePay Provider", provider):
-			frappe.throw(_("Provider {0} not found").format(provider))
-		
-		provider_doc = frappe.get_doc("EdgePay Provider", provider)
-		if not provider_doc.enabled:
-			frappe.throw(_("Provider {0} is disabled").format(provider))
-
-		# 2. Respect idempotency key
-		if idempotency_key:
-			existing_req = frappe.db.get_value(
-				"EdgePay Payment Request",
-				{
-					"idempotency_key": idempotency_key,
-					"status": ["not in", ["Paid", "Failed", "Expired", "Cancelled"]]
-				},
-				"name"
-			)
-			if existing_req:
-				pr = frappe.get_doc("EdgePay Payment Request", existing_req)
-				# Double check if it has expired since last query
-				if not check_and_mark_expired(pr):
-					data = {
-						"payment_request": pr.name,
-						"request_reference": pr.request_reference,
-						"status": pr.status,
-						"amount": pr.amount,
-						"currency": pr.currency,
-						"provider": pr.provider,
-						"expires_on": pr.expires_on
-					}
-					return {
-						"ok": True,
-						"status": "success",
-						"message": "Existing active Payment Request retrieved successfully (idempotent)",
-						"data": redact_secrets(data)
-					}
-
-		# 3. Create request document
-		pr = frappe.new_doc("EdgePay Payment Request")
-		pr.provider = provider
-		pr.amount = flt(amount)
-		pr.currency = currency
-		pr.customer_name = customer_name
-		pr.customer_email = customer_email
-		pr.customer_phone = customer_phone
-		pr.payment_purpose = payment_purpose
-		pr.source_app = source_app
-		pr.source_doctype = source_doctype
-		pr.source_name = source_name
-		pr.expires_on = expires_on
-		pr.idempotency_key = idempotency_key
-		
-		# Sanitize and validate metadata_json
-		if metadata_json:
-			try:
-				if isinstance(metadata_json, str):
-					parsed = json.loads(metadata_json)
-				else:
-					parsed = metadata_json
-				# Clean/redact any accidental credentials inside metadata
-				pr.metadata_json = json.dumps(redact_secrets(parsed))
-			except Exception:
-				frappe.throw(_("Invalid metadata_json payload"))
-
-		# Generate a unique request_reference if not provided
-		pr.request_reference = f"REQ-{frappe.generate_hash(length=12)}"
-		
-		pr.insert(ignore_permissions=True)
-		if not frappe.flags.in_test:
-			frappe.db.commit()
-
-		data = {
-			"payment_request": pr.name,
-			"request_reference": pr.request_reference,
-			"status": pr.status,
-			"amount": pr.amount,
-			"currency": pr.currency,
-			"provider": pr.provider,
-			"expires_on": pr.expires_on
-		}
-
-		return {
-			"ok": True,
-			"status": "success",
-			"message": "Payment request created successfully",
-			"data": redact_secrets(data)
-		}
-	except Exception as e:
-		from edgepayv1.edgepay.services.security import redact_secrets
-		redacted_msg = redact_secrets(str(e))
-		return {
-			"ok": False,
-			"status": "error",
-			"message": redacted_msg,
-			"data": None
-		}
 
 @frappe.whitelist()
-def initialize_payment_request_checkout(payment_request_name):
-	"""
-	Whitelisted API to safely initialize checkout.
-	Requires authenticated access. Enforces safe return fields.
-	"""
+def initialize_payment_request_checkout(payment_request_name: str):
 	try:
-		if frappe.session.user == "Guest":
-			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
+		require_payment_request_access(payment_request_name, ptype="write")
 		from edgepayv1.edgepay.services.checkout import initialize_checkout
-		from edgepayv1.edgepay.services.security import redact_secrets
 
-		# Run initialize_checkout service
 		result = initialize_checkout(payment_request_name)
-		
 		pr = frappe.get_doc("EdgePay Payment Request", payment_request_name)
-
-		data = {
-			"payment_request": pr.name,
-			"status": result.get("status"),
-			"checkout_url": result.get("checkout_url"),
-			"provider_reference": result.get("provider_reference"),
-			"expires_on": pr.expires_on
-		}
-
 		return {
 			"ok": True,
 			"status": "success",
 			"message": "Checkout initialized successfully",
-			"data": redact_secrets(data)
+			"data": redact_secrets(
+				{
+					"payment_request": pr.name,
+					"status": result.get("status"),
+					"checkout_url": result.get("checkout_url"),
+					"provider_reference": result.get("provider_reference"),
+					"expires_on": pr.expires_on,
+				}
+			),
 		}
-	except Exception as e:
-		from edgepayv1.edgepay.services.security import redact_secrets
-		redacted_msg = redact_secrets(str(e))
-		return {
-			"ok": False,
-			"status": "error",
-			"message": redacted_msg,
-			"data": None
-		}
+	except Exception as exc:
+		return _error_response(exc)
+
 
 @frappe.whitelist()
-def verify_payment_request_transaction(payment_request_name):
-	"""
-	Whitelisted API to safely verify a payment request transaction.
-	Requires authenticated access. Enforces safe return fields.
-	"""
+def verify_payment_request_transaction(payment_request_name: str):
 	try:
-		if frappe.session.user == "Guest":
-			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
+		require_payment_request_access(payment_request_name, ptype="write")
 		from edgepayv1.edgepay.services.verification import verify_transaction
-		from edgepayv1.edgepay.services.security import redact_secrets
 
-		# Run verify_transaction service
 		result = verify_transaction(payment_request_name)
-
-		data = {
-			"payment_request": result.get("payment_request"),
-			"request_status": result.get("request_status"),
-			"transaction": result.get("transaction"),
-			"transaction_status": result.get("transaction_status"),
-			"provider_reference": result.get("provider_reference"),
-			"amount": result.get("amount"),
-			"currency": result.get("currency"),
-			"paid_on": result.get("paid_on")
-		}
-
 		return {
 			"ok": True,
 			"status": "success",
 			"message": "Transaction verified successfully",
-			"data": redact_secrets(data)
+			"data": redact_secrets(
+				{
+					"payment_request": result.get("payment_request"),
+					"request_status": result.get("request_status"),
+					"transaction": result.get("transaction"),
+					"transaction_status": result.get("transaction_status"),
+					"provider_reference": result.get("provider_reference"),
+					"amount": result.get("amount"),
+					"currency": result.get("currency"),
+					"paid_on": result.get("paid_on"),
+				}
+			),
 		}
-	except Exception as e:
-		from edgepayv1.edgepay.services.security import redact_secrets
-		redacted_msg = redact_secrets(str(e))
-		return {
-			"ok": False,
-			"status": "error",
-			"message": redacted_msg,
-			"data": None
-		}
+	except Exception as exc:
+		return _error_response(exc)
+
 
 @frappe.whitelist()
-def get_payment_request_status(payment_request_name):
-	"""
-	Whitelisted API to safely check Payment Request status.
-	Requires authenticated access. Never mutates database besides checking expiry.
-	"""
+def get_payment_request_status(payment_request_name: str):
 	try:
-		if frappe.session.user == "Guest":
-			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
-
+		pr = require_payment_request_access(payment_request_name, ptype="read")
 		from edgepayv1.edgepay.services.checkout import check_and_mark_expired
-		from edgepayv1.edgepay.services.security import redact_secrets
 
-		if not frappe.db.exists("EdgePay Payment Request", payment_request_name):
-			frappe.throw(_("Payment Request {0} not found").format(payment_request_name))
-
-		pr = frappe.get_doc("EdgePay Payment Request", payment_request_name)
-		
-		# Check and update expiry in memory only (no mutation)
 		check_and_mark_expired(pr, save=False)
-
-		data = {
-			"payment_request": pr.name,
-			"request_reference": pr.request_reference,
-			"status": pr.status,
-			"amount": pr.amount,
-			"currency": pr.currency,
-			"provider": pr.provider,
-			"expires_on": pr.expires_on
-		}
-
 		return {
 			"ok": True,
 			"status": "success",
 			"message": "Payment request status retrieved successfully",
-			"data": redact_secrets(data)
+			"data": redact_secrets(
+				{
+					"payment_request": pr.name,
+					"request_reference": pr.request_reference,
+					"status": pr.status,
+					"amount": pr.amount,
+					"currency": pr.currency,
+					"provider": pr.provider,
+					"expires_on": pr.expires_on,
+				}
+			),
 		}
-	except Exception as e:
-		from edgepayv1.edgepay.services.security import redact_secrets
-		redacted_msg = redact_secrets(str(e))
-		return {
-			"ok": False,
-			"status": "error",
-			"message": redacted_msg,
-			"data": None
-		}
+	except Exception as exc:
+		return _error_response(exc)
+
 
 @frappe.whitelist()
-def get_payment_transaction_status(payment_request_name=None, provider_reference=None, transaction_reference=None):
-	"""
-	Whitelisted API to safely retrieve transaction status.
-	Requires authenticated access. Never mutates database records.
-	"""
+def get_payment_transaction_status(
+	payment_request_name: str | None = None,
+	provider_reference: str | None = None,
+	transaction_reference: str | None = None,
+):
 	try:
-		if frappe.session.user == "Guest":
-			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
-		from edgepayv1.edgepay.services.security import redact_secrets
-
+		require_authenticated_user()
 		filters = {}
 		if payment_request_name:
 			filters["payment_request"] = payment_request_name
@@ -363,194 +237,149 @@ def get_payment_transaction_status(payment_request_name=None, provider_reference
 			filters["provider_reference"] = provider_reference
 		if transaction_reference:
 			filters["transaction_reference"] = transaction_reference
-
 		if not filters:
 			frappe.throw(_("At least one reference parameter is required"))
-
 		txn_name = frappe.db.get_value("EdgePay Payment Transaction", filters, "name")
 		if not txn_name:
 			frappe.throw(_("Transaction not found for the given references"))
-
-		txn = frappe.get_doc("EdgePay Payment Transaction", txn_name)
-
-		data = {
-			"transaction": txn.name,
-			"payment_request": txn.payment_request,
-			"status": txn.status,
-			"amount": txn.amount,
-			"currency": txn.currency,
-			"provider_reference": txn.provider_reference,
-			"transaction_reference": txn.transaction_reference,
-			"paid_on": txn.paid_on,
-			"settlement_status": txn.settlement_status
-		}
-
+		txn = require_payment_transaction_access(txn_name, ptype="read")
 		return {
 			"ok": True,
 			"status": "success",
 			"message": "Payment transaction status retrieved successfully",
-			"data": redact_secrets(data)
+			"data": redact_secrets(
+				{
+					"transaction": txn.name,
+					"payment_request": txn.payment_request,
+					"status": txn.status,
+					"amount": txn.amount,
+					"currency": txn.currency,
+					"provider_reference": txn.provider_reference,
+					"transaction_reference": txn.transaction_reference,
+					"paid_on": txn.paid_on,
+					"settlement_status": txn.settlement_status,
+				}
+			),
 		}
-	except Exception as e:
-		from edgepayv1.edgepay.services.security import redact_secrets
-		redacted_msg = redact_secrets(str(e))
-		return {
-			"ok": False,
-			"status": "error",
-			"message": redacted_msg,
-			"data": None
-		}
+	except Exception as exc:
+		return _error_response(exc)
 
-@frappe.whitelist(allow_guest=True)
-def handle_checkout_callback(payment_request=None, provider_reference=None, transaction_reference=None, status=None):
-	"""
-	Whitelisted guest endpoint for handling checkout redirect/callbacks.
-	Treats query parameters as untrusted hints, runs server-side validation,
-	and returns minimal safe output for frontend presentation.
-	"""
+
+@frappe.whitelist(allow_guest=True)  # nosemgrep: frappe-semgrep-rules.rules.security.guest-whitelisted-method
+def handle_checkout_callback(
+	payment_request: str | None = None,
+	provider_reference: str | None = None,
+	transaction_reference: str | None = None,
+	status: str | None = None,
+):
+	"""Treat public redirect parameters as hints; provider verification remains authoritative."""
 	try:
 		from edgepayv1.edgepay.services.verification import verify_transaction
-		from edgepayv1.edgepay.services.security import redact_secrets
 
-		# Resolve payment request name from hints (supporting both standard arguments and Monnify/camelCase query parameters)
 		pr_name = payment_request or frappe.form_dict.get("paymentReference")
 		if pr_name:
 			pr_name = resolve_payment_request_by_ref(pr_name)
-
 		provider_ref = provider_reference or frappe.form_dict.get("transactionReference")
 		if not pr_name and provider_ref:
-			pr_name = frappe.db.get_value("EdgePay Payment Request", {"provider_reference": provider_ref}, "name")
-
+			pr_name = frappe.db.get_value(
+				"EdgePay Payment Request", {"provider_reference": provider_ref}, "name"
+			)
 		tx_ref = transaction_reference or frappe.form_dict.get("paymentReference")
 		if not pr_name and tx_ref:
 			pr_name = resolve_payment_request_by_ref(tx_ref)
-
 		if not pr_name:
 			frappe.throw(_("Payment request could not be resolved from callback parameters"))
-
-		# Run server-side verification before drawing conclusions
 		result = verify_transaction(pr_name)
-
-		data = {
-			"payment_request": pr_name,
-			"status": result.get("request_status"),
-			"message": "Payment verified successfully" if result.get("request_status") == "Paid" else "Payment verification completed"
-		}
-
 		return {
 			"ok": True,
 			"status": "success",
 			"message": "Callback processed successfully",
-			"data": redact_secrets(data)
+			"data": redact_secrets(
+				{
+					"payment_request": pr_name,
+					"status": result.get("request_status"),
+					"message": (
+						"Payment verified successfully"
+						if result.get("request_status") == "Paid"
+						else "Payment verification completed"
+					),
+				}
+			),
 		}
-	except Exception as e:
-		frappe.log_error(f"EdgePay Callback Error: {str(e)}", "EdgePay API Callback")
+	except Exception as exc:
+		frappe.log_error(f"EdgePay Callback Error: {redact_secrets(str(exc))}", "EdgePay API Callback")
 		return {
 			"ok": False,
 			"status": "error",
 			"message": "An error occurred during verification",
-			"data": None
+			"data": None,
 		}
 
-@frappe.whitelist()
-def create_payment_request_from_source(source_context):
-	"""
-	Whitelisted API to create a Payment Request from a generic source context dictionary.
-	Requires authenticated access.
-	"""
-	try:
-		if frappe.session.user == "Guest":
-			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
 
-		from edgepayv1.edgepay.services.connectors.registry import create_payment_request_from_source as create_from_source
+@frappe.whitelist()
+def create_payment_request_from_source(source_context: str | dict):
+	try:
+		require_authenticated_user()
+		require_doctype_permission("EdgePay Payment Request", ptype="create")
+		if isinstance(source_context, str):
+			source_context = json.loads(source_context)
+		provider = source_context.get("provider") if isinstance(source_context, dict) else None
+		if provider:
+			require_provider_access(provider, ptype="read")
+		from edgepayv1.edgepay.services.connectors.registry import (
+			create_payment_request_from_source as create_from_source,
+		)
+
 		return create_from_source(source_context)
-	except Exception as e:
-		from edgepayv1.edgepay.services.security import redact_secrets
-		redacted_msg = redact_secrets(str(e))
-		return {
-			"ok": False,
-			"status": "error",
-			"message": redacted_msg,
-			"data": None
-		}
+	except Exception as exc:
+		return _error_response(exc)
+
 
 @frappe.whitelist()
-def get_pending_payment_handoffs(source_app=None, limit=50):
-	"""
-	Whitelisted API to retrieve pending status handoffs.
-	Requires authenticated access.
-	"""
+def get_pending_payment_handoffs(source_app: str | None = None, limit: int | str = 50):
 	try:
-		if frappe.session.user == "Guest":
-			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
-		
+		require_platform_operations_access()
 		from edgepayv1.edgepay.services.handoff import get_pending_handoff_events
-		events = get_pending_handoff_events(source_app=source_app, limit=limit)
+
 		return {
 			"ok": True,
 			"status": "success",
 			"message": "Pending handoffs retrieved successfully",
-			"data": events
+			"data": get_pending_handoff_events(source_app=source_app, limit=limit),
 		}
-	except Exception as e:
-		from edgepayv1.edgepay.services.security import redact_secrets
-		return {
-			"ok": False,
-			"status": "error",
-			"message": redact_secrets(str(e)),
-			"data": None
-		}
+	except Exception as exc:
+		return _error_response(exc)
+
 
 @frappe.whitelist()
-def mark_payment_handoff_delivered(event_name):
-	"""
-	Whitelisted API to mark a status handoff event as Delivered.
-	Requires authenticated access.
-	"""
+def mark_payment_handoff_delivered(event_name: str):
 	try:
-		if frappe.session.user == "Guest":
-			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
-		
+		require_platform_operations_access()
 		from edgepayv1.edgepay.services.handoff import mark_handoff_event_delivered
+
 		mark_handoff_event_delivered(event_name)
 		return {
 			"ok": True,
 			"status": "success",
 			"message": f"Handoff event {event_name} marked as delivered",
-			"data": None
+			"data": None,
 		}
-	except Exception as e:
-		from edgepayv1.edgepay.services.security import redact_secrets
-		return {
-			"ok": False,
-			"status": "error",
-			"message": redact_secrets(str(e)),
-			"data": None
-		}
+	except Exception as exc:
+		return _error_response(exc)
+
 
 @frappe.whitelist()
-def mark_payment_handoff_failed(event_name, error_message=None):
-	"""
-	Whitelisted API to mark a status handoff event as Failed.
-	Requires authenticated access.
-	"""
+def mark_payment_handoff_failed(event_name: str, error_message: str | None = None):
 	try:
-		if frappe.session.user == "Guest":
-			frappe.throw(_("Authentication required to access this API"), frappe.PermissionError)
-		
+		require_platform_operations_access()
 		from edgepayv1.edgepay.services.handoff import mark_handoff_event_failed
+
 		mark_handoff_event_failed(event_name, error_message=error_message)
 		return {
 			"ok": True,
 			"status": "success",
 			"message": f"Handoff event {event_name} marked as failed",
-			"data": None
+			"data": None,
 		}
-	except Exception as e:
-		from edgepayv1.edgepay.services.security import redact_secrets
-		return {
-			"ok": False,
-			"status": "error",
-			"message": redact_secrets(str(e)),
-			"data": None
-		}
+	except Exception as exc:
+		return _error_response(exc)

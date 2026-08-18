@@ -1,0 +1,30 @@
+{
+ "doctype":"DocType",
+ "name":"EdgePay Merchant Account",
+ "module":"EdgePay",
+ "autoname":"format:{merchant}-{account_name}",
+ "track_changes":1,
+ "engine":"InnoDB",
+ "field_order":["merchant","account_name","account_type","status","legal_name","registration_number","tax_identification_number","default_currency","settlement_section","settlement_bank_name","settlement_account_name","settlement_account_number_masked","external_company_reference"],
+ "fields":[
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"account_name","fieldtype":"Data","label":"Business Account Name","reqd":1},
+  {"fieldname":"account_type","fieldtype":"Select","label":"Account Type","options":"Primary Business\nTrading Entity\nSubsidiary\nDivision","default":"Primary Business","reqd":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nActive\nSuspended\nClosed","default":"Draft","reqd":1},
+  {"fieldname":"legal_name","fieldtype":"Data","label":"Legal Name","reqd":1},
+  {"fieldname":"registration_number","fieldtype":"Data","label":"CAC / Registration Number"},
+  {"fieldname":"tax_identification_number","fieldtype":"Data","label":"Tax Identification Number"},
+  {"fieldname":"default_currency","fieldtype":"Link","label":"Default Currency","options":"Currency","reqd":1},
+  {"fieldname":"settlement_section","fieldtype":"Section Break","label":"Settlement Information"},
+  {"fieldname":"settlement_bank_name","fieldtype":"Data","label":"Settlement Bank"},
+  {"fieldname":"settlement_account_name","fieldtype":"Data","label":"Settlement Account Name"},
+  {"fieldname":"settlement_account_number_masked","fieldtype":"Data","label":"Masked Settlement Account Number","description":"Store only a masked account number, for example ******1234"},
+  {"fieldname":"external_company_reference","fieldtype":"Data","label":"External Company Reference","search_index":1}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"write":1,"create":1,"report":1},
+  {"role":"EdgePay User","read":1,"report":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
+}

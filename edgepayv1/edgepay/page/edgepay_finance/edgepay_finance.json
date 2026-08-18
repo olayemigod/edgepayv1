@@ -1,0 +1,20 @@
+{
+ "content": null,
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "module": "EdgePay",
+ "name": "edgepay-finance",
+ "owner": "Administrator",
+ "page_name": "edgepay-finance",
+ "roles": [
+  {"role": "EdgePay Admin"},
+  {"role": "EdgePay Manager"},
+  {"role": "EdgePay Auditor"}
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Finance & Exceptions"
+}

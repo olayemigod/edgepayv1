@@ -5,268 +5,103 @@ app_description = "Universal payment orchestration layer for Frappe, ERPNext, PO
 app_email = "info@processedge.com.ng"
 app_license = "mit"
 
-# Apps
-# ------------------
+# EdgePay renders through the independent local EdgeSuite UI runtime. CoreEdge
+# may provision platform access, but it is not a frontend runtime dependency.
+required_apps = ["edgesuite_ui"]
+app_home = "/app/edgepay-home"
+app_include_js = ["/assets/edgepayv1/js/edgepay_product_menu.js"]
 
-# required_apps = []
-
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "edgepayv1",
-# 		"logo": "/assets/edgepayv1/logo.png",
-# 		"title": "EdgePay",
-# 		"route": "/edgepayv1",
-# 		"has_permission": "edgepayv1.api.permission.has_app_permission"
-# 	}
-# ]
-
-# Includes in <head>
-# ------------------
-
-# include js, css files in header of desk.html
-# app_include_css = "/assets/edgepayv1/css/edgepayv1.css"
-# app_include_js = "/assets/edgepayv1/js/edgepayv1.js"
-
-# include js, css files in header of web template
-# web_include_css = "/assets/edgepayv1/css/edgepayv1.css"
-# web_include_js = "/assets/edgepayv1/js/edgepayv1.js"
-
-# include custom scss in every website theme (without file extension ".scss")
-# website_theme_scss = "edgepayv1/public/scss/website"
-
-# include js, css files in header of web form
-# webform_include_js = {"doctype": "public/js/doctype.js"}
-# webform_include_css = {"doctype": "public/css/doctype.css"}
-
-# include js in page
-# page_js = {"page" : "public/js/file.js"}
-
-# include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
-# doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
-# doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
-
-# Svg Icons
-# ------------------
-# include app icons in desk
-# app_include_icons = "edgepayv1/public/icons.svg"
-
-# Home Pages
-# ----------
-
-# application home page (will override Website Settings)
-# home_page = "login"
-
-# website user home page (by Role)
-# role_home_page = {
-# 	"Role": "home_page"
-# }
-
-# Generators
-# ----------
-
-# automatically create page for each record of this doctype
-# website_generators = ["Web Page"]
-
-# automatically load and sync documents of this doctype from downstream apps
-# importable_doctypes = [doctype_1]
-
-# Jinja
-# ----------
-
-# add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "edgepayv1.utils.jinja_methods",
-# 	"filters": "edgepayv1.utils.jinja_filters"
-# }
+add_to_apps_screen = [
+	{
+		"name": "edgepayv1",
+		"logo": "/assets/edgepayv1/logo.png",
+		"title": "EdgePay",
+		"route": "/app/edgepay-home",
+		"has_permission": "edgepayv1.api.permission.has_app_permission",
+	}
+]
 
 fixtures = [
 	{
 		"dt": "Role",
 		"filters": [
-			["role_name", "in", [
-				"EdgePay Admin",
-				"EdgePay Manager",
-				"EdgePay User",
-				"EdgePay Auditor"
-			]]
-		]
+			["role_name", "in", ["EdgePay Admin", "EdgePay Manager", "EdgePay User", "EdgePay Auditor"]]
+		],
 	}
 ]
 
-# Installation
-# ------------
+doctype_js = {"EdgePay Payment Request": "public/js/edgepay_payment_request.js"}
 
-# before_install = "edgepayv1.install.before_install"
-# after_install = "edgepayv1.install.after_install"
+scheduler_events = {
+	"cron": {
+		"*/5 * * * *": ["edgepayv1.edgepay.services.delivery_worker.process_pending_deliveries"],
+	},
+	"daily": ["edgepayv1.edgepay.services.delivery_worker.cleanup_expired_api_nonces"],
+}
 
-# Uninstallation
-# ------------
+_PERMISSION_MODULE = "edgepayv1.edgepay.permissions"
 
-# before_uninstall = "edgepayv1.uninstall.before_uninstall"
-# after_uninstall = "edgepayv1.uninstall.after_uninstall"
+permission_query_conditions = {
+	"EdgePay Merchant": f"{_PERMISSION_MODULE}.merchant_query",
+	"EdgePay Merchant Account": f"{_PERMISSION_MODULE}.merchant_account_query",
+	"EdgePay Merchant Branch": f"{_PERMISSION_MODULE}.merchant_branch_query",
+	"EdgePay Provider Account": f"{_PERMISSION_MODULE}.provider_account_query",
+	"EdgePay Merchant Verification": f"{_PERMISSION_MODULE}.merchant_verification_query",
+	"EdgePay Verification Consent": f"{_PERMISSION_MODULE}.verification_consent_query",
+	"EdgePay Identity Verification Session": f"{_PERMISSION_MODULE}.identity_session_query",
+	"EdgePay Identity Verification Check": f"{_PERMISSION_MODULE}.identity_check_query",
+	"EdgePay API Client": f"{_PERMISSION_MODULE}.api_client_query",
+	"EdgePay API Request Nonce": f"{_PERMISSION_MODULE}.api_nonce_query",
+	"EdgePay API Usage Log": f"{_PERMISSION_MODULE}.api_usage_query",
+	"EdgePay Delivery Endpoint": f"{_PERMISSION_MODULE}.delivery_endpoint_query",
+	"EdgePay Delivery": f"{_PERMISSION_MODULE}.delivery_query",
+	"EdgePay Delivery Attempt": f"{_PERMISSION_MODULE}.delivery_attempt_query",
+	"EdgePay Payment Request": f"{_PERMISSION_MODULE}.payment_request_query",
+	"EdgePay Payment Attempt": f"{_PERMISSION_MODULE}.payment_attempt_query",
+	"EdgePay Payment Transaction": f"{_PERMISSION_MODULE}.payment_transaction_query",
+	"EdgePay Payment Event": f"{_PERMISSION_MODULE}.payment_event_query",
+	"EdgePay External Reference": f"{_PERMISSION_MODULE}.external_reference_query",
+	"EdgePay Refund Request": f"{_PERMISSION_MODULE}.refund_request_query",
+	"EdgePay Refund Processing Attempt": f"{_PERMISSION_MODULE}.refund_processing_attempt_query",
+	"EdgePay Dispute": f"{_PERMISSION_MODULE}.dispute_query",
+	"EdgePay Chargeback": f"{_PERMISSION_MODULE}.chargeback_query",
+	"EdgePay Fee Record": f"{_PERMISSION_MODULE}.fee_record_query",
+	"EdgePay Settlement Batch": f"{_PERMISSION_MODULE}.settlement_batch_query",
+	"EdgePay Settlement Item": f"{_PERMISSION_MODULE}.settlement_item_query",
+	"EdgePay Webhook Event": f"{_PERMISSION_MODULE}.webhook_event_query",
+	"EdgePay Status Handoff Event": f"{_PERMISSION_MODULE}.handoff_event_query",
+}
 
-# Integration Setup
-# ------------------
-# To set up dependencies/integrations with other apps
-# Name of the app being installed is passed as an argument
-
-# before_app_install = "edgepayv1.utils.before_app_install"
-# after_app_install = "edgepayv1.utils.after_app_install"
-
-# Integration Cleanup
-# -------------------
-# To clean up dependencies/integrations with other apps
-# Name of the app being uninstalled is passed as an argument
-
-# before_app_uninstall = "edgepayv1.utils.before_app_uninstall"
-# after_app_uninstall = "edgepayv1.utils.after_app_uninstall"
-
-# Build
-# ------------------
-# To hook into the build process
-
-# after_build = "edgepayv1.build.after_build"
-
-# Desk Notifications
-# ------------------
-# See frappe.core.notifications.get_notification_config
-
-# notification_config = "edgepayv1.notifications.get_notification_config"
-
-# Permissions
-# -----------
-# Permissions evaluated in scripted ways
-
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
-
-# Document Events
-# ---------------
-# Hook on document methods and events
-
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
-
-# Scheduled Tasks
-# ---------------
-
-# scheduler_events = {
-# 	"all": [
-# 		"edgepayv1.tasks.all"
-# 	],
-# 	"daily": [
-# 		"edgepayv1.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"edgepayv1.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"edgepayv1.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"edgepayv1.tasks.monthly"
-# 	],
-# }
-
-# Testing
-# -------
-
-# before_tests = "edgepayv1.install.before_tests"
-
-# Extend DocType Class
-# ------------------------------
-#
-# Specify custom mixins to extend the standard doctype controller.
-# extend_doctype_class = {
-# 	"Task": "edgepayv1.custom.task.CustomTaskMixin"
-# }
-
-# Overriding Methods
-# ------------------------------
-#
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "edgepayv1.event.get_events"
-# }
-#
-# each overriding function accepts a `data` argument;
-# generated from the base implementation of the doctype dashboard,
-# along with any modifications made in other Frappe apps
-# override_doctype_dashboards = {
-# 	"Task": "edgepayv1.task.get_dashboard_data"
-# }
-
-# exempt linked doctypes from being automatically cancelled
-#
-# auto_cancel_exempted_doctypes = ["Auto Repeat"]
-
-# Ignore links to specified DocTypes when deleting documents
-# -----------------------------------------------------------
-
-# ignore_links_on_delete = ["Communication", "ToDo"]
-
-# Request Events
-# ----------------
-# before_request = ["edgepayv1.utils.before_request"]
-# after_request = ["edgepayv1.utils.after_request"]
-
-# Job Events
-# ----------
-# before_job = ["edgepayv1.utils.before_job"]
-# after_job = ["edgepayv1.utils.after_job"]
-
-# User Data Protection
-# --------------------
-
-# user_data_fields = [
-# 	{
-# 		"doctype": "{doctype_1}",
-# 		"filter_by": "{filter_by}",
-# 		"redact_fields": ["{field_1}", "{field_2}"],
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_2}",
-# 		"filter_by": "{filter_by}",
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_3}",
-# 		"strict": False,
-# 	},
-# 	{
-# 		"doctype": "{doctype_4}"
-# 	}
-# ]
-
-# Authentication and authorization
-# --------------------------------
-
-# auth_hooks = [
-# 	"edgepayv1.auth.validate"
-# ]
-
-# Automatically update python controller files with type annotations for this app.
-# export_python_type_annotations = True
-
-# default_log_clearing_doctypes = {
-# 	"Logging DocType Name": 30  # days to retain logs
-# }
-
-# Translation
-# ------------
-# List of apps whose translatable strings should be excluded from this app's translations.
-# ignore_translatable_strings_from = []
-
+has_permission = {
+	doctype: f"{_PERMISSION_MODULE}.has_merchant_permission"
+	for doctype in [
+		"EdgePay Merchant",
+		"EdgePay Merchant Account",
+		"EdgePay Merchant Branch",
+		"EdgePay Provider Account",
+		"EdgePay Merchant Verification",
+		"EdgePay Verification Consent",
+		"EdgePay Identity Verification Session",
+		"EdgePay Identity Verification Check",
+		"EdgePay API Client",
+		"EdgePay API Request Nonce",
+		"EdgePay API Usage Log",
+		"EdgePay Delivery Endpoint",
+		"EdgePay Delivery",
+		"EdgePay Delivery Attempt",
+		"EdgePay Payment Request",
+		"EdgePay Payment Attempt",
+		"EdgePay Payment Transaction",
+		"EdgePay Payment Event",
+		"EdgePay External Reference",
+		"EdgePay Refund Request",
+		"EdgePay Refund Processing Attempt",
+		"EdgePay Dispute",
+		"EdgePay Chargeback",
+		"EdgePay Fee Record",
+		"EdgePay Settlement Batch",
+		"EdgePay Settlement Item",
+		"EdgePay Webhook Event",
+		"EdgePay Status Handoff Event",
+	]
+}
