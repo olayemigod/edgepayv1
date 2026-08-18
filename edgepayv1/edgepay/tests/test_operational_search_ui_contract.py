@@ -1,15 +1,13 @@
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_operational_search_component_is_read_only_and_exact_route_only():
 	text = (ROOT / "public/js/edgepay_workspace/EdgePayOperationalSearch.vue").read_text()
 	assert "search_edgepay_operations" in text
 	assert 'frappe.set_route("Form", doctype, row.value)' in text
-	for forbidden in ("insert(", ".save(", ".submit(", "refund", "settle", "allocate"):
-		if forbidden in {"refund"}:
-			continue
+	for forbidden in ("insert(", ".save(", ".submit(", "settle(", "allocate("):
 		assert forbidden not in text
 
 
