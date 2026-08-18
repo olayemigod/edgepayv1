@@ -20,7 +20,7 @@ def test_non_empty_search_queries_full_merchant_scope_before_ranking():
 	assert "_candidate_anchors" in source
 	assert "MAX_ANCHORS = 4" in source
 	assert "available_search" in source
-	assert 'or_filters={fieldname: search_text for fieldname in available_search}' in source
+	assert "or_filters={fieldname: search_text for fieldname in available_search}" in source
 	assert 'or_filters={fieldname: ["like", f"%{anchor}%"] for fieldname in available_search}' in source
 	assert "remaining = CANDIDATE_LIMIT - len(rows)" in source
 
