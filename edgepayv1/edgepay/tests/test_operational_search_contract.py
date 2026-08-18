@@ -15,6 +15,16 @@ def test_operational_search_is_merchant_scoped_and_bounded():
 	assert "limit_page_length=CANDIDATE_LIMIT" in source
 
 
+def test_non_empty_search_queries_full_merchant_scope_before_ranking():
+	source = _read("api/operational_search.py")
+	assert "_candidate_anchors" in source
+	assert "MAX_ANCHORS = 4" in source
+	assert "available_search" in source
+	assert 'or_filters={fieldname: search_text for fieldname in available_search}' in source
+	assert 'or_filters={fieldname: ["like", f"%{anchor}%"] for fieldname in available_search}' in source
+	assert "remaining = CANDIDATE_LIMIT - len(rows)" in source
+
+
 def test_operational_search_prefers_financial_identifiers():
 	source = _read("api/operational_search.py")
 	assert 'exact_fields=("value", "reference", "provider_reference", "transaction_reference")' in source
