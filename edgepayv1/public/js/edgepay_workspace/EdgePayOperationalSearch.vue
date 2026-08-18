@@ -3,7 +3,10 @@
 		<div>
 			<p class="edgepay-operational-search__eyebrow">Operational search</p>
 			<h2>Find an EdgePay record</h2>
-			<p>Search by exact EdgePay or provider reference, customer, status, or related operational context.</p>
+			<p>
+				Search by exact EdgePay or provider reference, customer, status, or related
+				operational context.
+			</p>
 		</div>
 		<EdgeLinkField
 			:model-value="selected"
@@ -40,9 +43,10 @@ export default {
 			);
 			return (response.message || []).map((row) => ({
 				...row,
-				label: row.reference && row.reference !== row.label
-					? `${row.label} · ${row.reference}`
-					: row.label,
+				label:
+					row.reference && row.reference !== row.label
+						? `${row.label} · ${row.reference}`
+						: row.label,
 				description: [row.kind, row.description].filter(Boolean).join(" · "),
 			}));
 		},
@@ -69,19 +73,23 @@ export default {
 	background: var(--card-bg);
 }
 .edgepay-operational-search h2,
-.edgepay-operational-search p { margin: 0; }
+.edgepay-operational-search p {
+	margin: 0;
+}
 .edgepay-operational-search__eyebrow {
-	font-size: .75rem;
+	font-size: 0.75rem;
 	font-weight: 600;
 	text-transform: uppercase;
-	letter-spacing: .04em;
+	letter-spacing: 0.04em;
 	color: var(--text-muted);
 }
 .edgepay-operational-search div > p:last-child {
-	margin-top: .25rem;
+	margin-top: 0.25rem;
 	color: var(--text-muted);
 }
 @media (max-width: 760px) {
-	.edgepay-operational-search { grid-template-columns: 1fr; }
+	.edgepay-operational-search {
+		grid-template-columns: 1fr;
+	}
 }
 </style>
