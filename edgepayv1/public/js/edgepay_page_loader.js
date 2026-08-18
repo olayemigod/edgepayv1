@@ -6,6 +6,7 @@ window.EdgePayPageLoader = (() => {
 		"EdgeDataTable",
 		"EdgeModal",
 		"EdgeInput",
+		"EdgeLinkField",
 		"EdgeLoadingState",
 		"EdgeErrorState",
 	];
