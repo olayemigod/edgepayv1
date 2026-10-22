@@ -19,7 +19,6 @@ class TestSmokeUtility(FrappeTestCase):
 		self.settings.allow_external_http_calls = 0
 		self.settings.sandbox_mode = 0
 		self.settings.save()
-		frappe.db.commit()
 
 	def tearDown(self):
 		# Clean up any temporary smoke provider and requests if they leaked
@@ -39,7 +38,6 @@ class TestSmokeUtility(FrappeTestCase):
 		settings.allow_external_http_calls = 0
 		settings.sandbox_mode = 0
 		settings.save()
-		frappe.db.commit()
 		super().tearDown()
 		self.db_backup.restore()
 
