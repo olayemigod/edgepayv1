@@ -123,6 +123,11 @@ class TestSmokeUtility(FrappeTestCase):
 		with patch.dict(os.environ, env_vars):
 			res = run_monnify_sandbox_smoke()
 			self.assertTrue(res)
+		self.assertFalse(
+			frappe.db.exists(
+				"EdgePay External Reference", {"reference_value": "MON-SMOKE-TX"}
+			)
+		)
 
 		# Verify settings are restored
 		settings = frappe.get_doc("EdgePay Settings")
