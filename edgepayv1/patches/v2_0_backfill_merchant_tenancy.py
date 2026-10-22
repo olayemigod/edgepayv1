@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Idempotently backfill the Phase 2A merchant boundary for legacy records."""
 
 import frappe
@@ -15,16 +14,18 @@ def execute():
 
 def _ensure_legacy_merchant():
 	if not frappe.db.exists("EdgePay Merchant", LEGACY_MERCHANT):
-		doc = frappe.get_doc({
-			"doctype": "EdgePay Merchant",
-			"merchant_name": LEGACY_MERCHANT,
-			"legal_name": "ProcessEdge Legacy EdgePay Data",
-			"status": "Active",
-			"verification_status": "Verified",
-			"country": "Nigeria" if frappe.db.exists("Country", "Nigeria") else None,
-			"default_currency": "NGN" if frappe.db.exists("Currency", "NGN") else None,
-			"external_platform": "Legacy",
-		})
+		doc = frappe.get_doc(
+			{
+				"doctype": "EdgePay Merchant",
+				"merchant_name": LEGACY_MERCHANT,
+				"legal_name": "ProcessEdge Legacy EdgePay Data",
+				"status": "Active",
+				"verification_status": "Verified",
+				"country": "Nigeria" if frappe.db.exists("Country", "Nigeria") else None,
+				"default_currency": "NGN" if frappe.db.exists("Currency", "NGN") else None,
+				"external_platform": "Legacy",
+			}
+		)
 		doc.insert(ignore_permissions=True)
 	return LEGACY_MERCHANT
 
@@ -39,18 +40,22 @@ def _ensure_provider_accounts(merchant):
 		)
 		if not name:
 			provider_doc = frappe.get_doc("EdgePay Provider", provider)
-			account = frappe.get_doc({
-				"doctype": "EdgePay Provider Account",
-				"merchant": merchant,
-				"provider": provider,
-				"account_label": "Legacy",
-				"environment": "Sandbox" if provider_doc.sandbox_mode else "Live",
-				"enabled": provider_doc.enabled,
-				"status": "Active" if provider_doc.enabled else "Disabled",
-				"api_key": provider_doc.get_password("api_key") if provider_doc.api_key else None,
-				"secret_key": provider_doc.get_password("secret_key") if provider_doc.secret_key else None,
-				"contract_code": provider_doc.contract_code,
-			})
+			account = frappe.get_doc(
+				{
+					"doctype": "EdgePay Provider Account",
+					"merchant": merchant,
+					"provider": provider,
+					"account_label": "Legacy",
+					"environment": "Sandbox" if provider_doc.sandbox_mode else "Live",
+					"enabled": provider_doc.enabled,
+					"status": "Active" if provider_doc.enabled else "Disabled",
+					"api_key": provider_doc.get_password("api_key") if provider_doc.api_key else None,
+					"secret_key": provider_doc.get_password("secret_key")
+					if provider_doc.secret_key
+					else None,
+					"contract_code": provider_doc.contract_code,
+				}
+			)
 			account.insert(ignore_permissions=True)
 			name = account.name
 		accounts[provider] = name

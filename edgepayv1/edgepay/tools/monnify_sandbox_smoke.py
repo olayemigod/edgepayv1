@@ -150,12 +150,8 @@ def run_monnify_sandbox_smoke():
 		raise
 	finally:
 		if payment_request_name:
-			frappe.db.delete(
-				"EdgePay External Reference", {"payment_request": payment_request_name}
-			)
-			frappe.db.delete(
-				"EdgePay Status Handoff Event", {"payment_request": payment_request_name}
-			)
+			frappe.db.delete("EdgePay External Reference", {"payment_request": payment_request_name})
+			frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": payment_request_name})
 		if transaction_name and frappe.db.exists("EdgePay Payment Transaction", transaction_name):
 			frappe.db.delete("EdgePay Payment Transaction", transaction_name)
 		if payment_request_name:
