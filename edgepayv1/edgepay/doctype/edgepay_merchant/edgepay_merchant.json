@@ -1,0 +1,44 @@
+{
+ "doctype": "DocType",
+ "name": "EdgePay Merchant",
+ "module": "EdgePay",
+ "autoname": "field:merchant_name",
+ "naming_rule": "By fieldname",
+ "track_changes": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "merchant_name", "public_id", "status", "onboarding_status", "verification_status", "live_payments_allowed",
+  "identity_section", "legal_name", "trading_name", "email", "phone", "country", "default_currency", "website", "registered_address",
+  "verification_section", "latest_verification", "verified_on", "verified_by",
+  "integration_section", "external_platform", "external_tenant_reference"
+ ],
+ "fields": [
+  {"fieldname":"merchant_name","fieldtype":"Data","label":"Merchant Name","reqd":1,"unique":1},
+  {"fieldname":"public_id","fieldtype":"Data","label":"Public Merchant ID","read_only":1,"unique":1,"search_index":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nActive\nSuspended\nClosed","default":"Draft","reqd":1},
+  {"fieldname":"onboarding_status","fieldtype":"Select","label":"Onboarding Status","options":"Not Started\nIn Progress\nSubmitted\nUnder Review\nAction Required\nCompleted\nRejected\nReview Required","default":"Not Started","read_only":1,"search_index":1},
+  {"fieldname":"verification_status","fieldtype":"Select","label":"Verification Status","options":"Not Submitted\nSubmitted\nUnder Review\nMore Information Required\nVerified\nRejected\nExpired\nRevoked","default":"Not Submitted","read_only":1,"search_index":1},
+  {"fieldname":"live_payments_allowed","fieldtype":"Check","label":"Live Payments Allowed","default":"0","read_only":1},
+  {"fieldname":"identity_section","fieldtype":"Section Break","label":"Merchant Information"},
+  {"fieldname":"legal_name","fieldtype":"Data","label":"Legal Name"},
+  {"fieldname":"trading_name","fieldtype":"Data","label":"Trading Name"},
+  {"fieldname":"email","fieldtype":"Data","label":"Email","options":"Email"},
+  {"fieldname":"phone","fieldtype":"Data","label":"Phone"},
+  {"fieldname":"country","fieldtype":"Link","label":"Country","options":"Country"},
+  {"fieldname":"default_currency","fieldtype":"Link","label":"Default Currency","options":"Currency"},
+  {"fieldname":"website","fieldtype":"Data","label":"Website"},
+  {"fieldname":"registered_address","fieldtype":"Small Text","label":"Registered Business Address"},
+  {"fieldname":"verification_section","fieldtype":"Section Break","label":"Verification","collapsible":1},
+  {"fieldname":"latest_verification","fieldtype":"Link","label":"Latest Verification","options":"EdgePay Merchant Verification","read_only":1},
+  {"fieldname":"verified_on","fieldtype":"Datetime","label":"Verified On","read_only":1},
+  {"fieldname":"verified_by","fieldtype":"Link","label":"Verified By","options":"User","read_only":1},
+  {"fieldname":"integration_section","fieldtype":"Section Break","label":"External Integration","collapsible":1},
+  {"fieldname":"external_platform","fieldtype":"Data","label":"External Platform","description":"Optional external platform such as CoreEdge"},
+  {"fieldname":"external_tenant_reference","fieldtype":"Data","label":"External Tenant Reference","search_index":1}
+ ],
+ "permissions": [
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"write":1,"create":1,"report":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
+}

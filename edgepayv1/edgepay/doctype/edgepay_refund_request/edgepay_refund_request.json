@@ -1,0 +1,30 @@
+{
+ "doctype":"DocType","name":"EdgePay Refund Request","module":"EdgePay","autoname":"naming_series:","naming_rule":"By \"Naming Series\" field","track_changes":1,"engine":"InnoDB",
+ "field_order":["naming_series","merchant","payment_request","payment_transaction","provider_account","status","refund_type","amount","currency","reason","approval_section","requested_by","requested_on","approved_by","approved_on","provider_reference","completed_on","failure_reason"],
+ "fields":[
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Naming Series","options":"EP-RFD-.YYYY.-","default":"EP-RFD-.YYYY.-","reqd":1},
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"payment_request","fieldtype":"Link","label":"Payment Request","options":"EdgePay Payment Request","reqd":1,"search_index":1},
+  {"fieldname":"payment_transaction","fieldtype":"Link","label":"Payment Transaction","options":"EdgePay Payment Transaction","reqd":1,"search_index":1},
+  {"fieldname":"provider_account","fieldtype":"Link","label":"Provider Account","options":"EdgePay Provider Account","reqd":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nRequested\nApproved\nSubmitted\nProcessing\nCompleted\nFailed\nCancelled","default":"Draft","reqd":1},
+  {"fieldname":"refund_type","fieldtype":"Select","label":"Refund Type","options":"Full\nPartial","default":"Full","reqd":1},
+  {"fieldname":"amount","fieldtype":"Currency","label":"Refund Amount","options":"currency","reqd":1},
+  {"fieldname":"currency","fieldtype":"Link","label":"Currency","options":"Currency","reqd":1},
+  {"fieldname":"reason","fieldtype":"Small Text","label":"Reason","reqd":1},
+  {"fieldname":"approval_section","fieldtype":"Section Break","label":"Approval and Provider Processing"},
+  {"fieldname":"requested_by","fieldtype":"Link","label":"Requested By","options":"User","read_only":1},
+  {"fieldname":"requested_on","fieldtype":"Datetime","label":"Requested On","read_only":1},
+  {"fieldname":"approved_by","fieldtype":"Link","label":"Approved By","options":"User","read_only":1},
+  {"fieldname":"approved_on","fieldtype":"Datetime","label":"Approved On","read_only":1},
+  {"fieldname":"provider_reference","fieldtype":"Data","label":"Provider Refund Reference","read_only":1,"search_index":1},
+  {"fieldname":"completed_on","fieldtype":"Datetime","label":"Completed On","read_only":1},
+  {"fieldname":"failure_reason","fieldtype":"Small Text","label":"Failure Reason","read_only":1}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"write":1,"create":1,"report":1,"export":1},
+  {"role":"EdgePay User","read":1,"create":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
+}

@@ -1,8 +1,10 @@
-# -*- coding: utf-8 -*-
-
-class BaseProvider(object):
-	def __init__(self, provider_doc):
+class BaseProvider:
+	def __init__(self, provider_doc, provider_account=None):
 		self.provider_doc = provider_doc
+		self.provider_account = provider_account
+
+	def get_credentials_doc(self):
+		return self.provider_account
 
 	def validate_configuration(self):
 		raise NotImplementedError
@@ -42,4 +44,3 @@ class BaseProvider(object):
 
 	def get_webhook_transaction_reference(self, payload):
 		raise NotImplementedError
-

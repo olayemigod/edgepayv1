@@ -1,0 +1,27 @@
+{
+ "doctype":"DocType",
+ "name":"EdgePay Merchant Branch",
+ "module":"EdgePay",
+ "autoname":"format:{merchant_account}-{branch_name}",
+ "track_changes":1,
+ "engine":"InnoDB",
+ "field_order":["merchant","merchant_account","branch_name","branch_code","status","address_line","city","state","country","external_branch_reference"],
+ "fields":[
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"merchant_account","fieldtype":"Link","label":"Merchant Account","options":"EdgePay Merchant Account","reqd":1,"search_index":1},
+  {"fieldname":"branch_name","fieldtype":"Data","label":"Branch Name","reqd":1},
+  {"fieldname":"branch_code","fieldtype":"Data","label":"Branch Code","search_index":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nActive\nSuspended\nClosed","default":"Draft","reqd":1},
+  {"fieldname":"address_line","fieldtype":"Small Text","label":"Address"},
+  {"fieldname":"city","fieldtype":"Data","label":"City"},
+  {"fieldname":"state","fieldtype":"Data","label":"State"},
+  {"fieldname":"country","fieldtype":"Link","label":"Country","options":"Country"},
+  {"fieldname":"external_branch_reference","fieldtype":"Data","label":"External Branch Reference","search_index":1}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"write":1,"create":1,"report":1},
+  {"role":"EdgePay User","read":1,"report":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
+}

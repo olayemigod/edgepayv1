@@ -1,211 +1,45 @@
 {
- "actions": [],
- "creation": "2026-06-12 18:00:00",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "naming_series",
-  "payment_request",
-  "payment_transaction",
-  "source_app",
-  "source_doctype",
-  "source_name",
-  "source_reference",
-  "event_source",
-  "event_type",
-  "request_status",
-  "transaction_status",
-  "provider",
-  "provider_reference",
-  "transaction_reference",
-  "amount",
-  "currency",
-  "paid_on",
-  "processing_status",
-  "delivery_attempts",
-  "last_delivery_on",
-  "error_message",
-  "payload_json",
-  "idempotency_key"
+ "doctype":"DocType",
+ "name":"EdgePay Status Handoff Event",
+ "module":"EdgePay",
+ "autoname":"naming_series:",
+ "naming_rule":"By \"Naming Series\" field",
+ "track_changes":1,
+ "engine":"InnoDB",
+ "field_order":["naming_series","merchant","merchant_account","merchant_branch","provider_account","payment_request","payment_transaction","source_app","source_doctype","source_name","source_reference","event_source","event_type","request_status","transaction_status","provider","provider_reference","transaction_reference","amount","currency","paid_on","processing_status","delivery_attempts","last_delivery_on","error_message","payload_json","idempotency_key"],
+ "fields":[
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Naming Series","options":"EP-SHE-.YYYY.-","default":"EP-SHE-.YYYY.-","reqd":1},
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"merchant_account","fieldtype":"Link","label":"Merchant Account","options":"EdgePay Merchant Account"},
+  {"fieldname":"merchant_branch","fieldtype":"Link","label":"Merchant Branch","options":"EdgePay Merchant Branch"},
+  {"fieldname":"provider_account","fieldtype":"Link","label":"Provider Account","options":"EdgePay Provider Account"},
+  {"fieldname":"payment_request","fieldtype":"Link","label":"Payment Request","options":"EdgePay Payment Request","reqd":1},
+  {"fieldname":"payment_transaction","fieldtype":"Link","label":"Payment Transaction","options":"EdgePay Payment Transaction"},
+  {"fieldname":"source_app","fieldtype":"Data","label":"Source App"},
+  {"fieldname":"source_doctype","fieldtype":"Data","label":"Source DocType"},
+  {"fieldname":"source_name","fieldtype":"Data","label":"Source Name"},
+  {"fieldname":"source_reference","fieldtype":"Data","label":"Source Reference"},
+  {"fieldname":"event_source","fieldtype":"Select","label":"Event Source","options":"Checkout\nVerification\nWebhook\nExpiry\nManual"},
+  {"fieldname":"event_type","fieldtype":"Select","label":"Event Type","options":"Payment Initiated\nPayment Pending\nPayment Paid\nPayment Failed\nPayment Expired\nPayment Cancelled"},
+  {"fieldname":"request_status","fieldtype":"Data","label":"Request Status"},
+  {"fieldname":"transaction_status","fieldtype":"Data","label":"Transaction Status"},
+  {"fieldname":"provider","fieldtype":"Link","label":"Provider","options":"EdgePay Provider"},
+  {"fieldname":"provider_reference","fieldtype":"Data","label":"Provider Reference"},
+  {"fieldname":"transaction_reference","fieldtype":"Data","label":"Transaction Reference"},
+  {"fieldname":"amount","fieldtype":"Currency","label":"Amount"},
+  {"fieldname":"currency","fieldtype":"Data","label":"Currency"},
+  {"fieldname":"paid_on","fieldtype":"Datetime","label":"Paid On"},
+  {"fieldname":"processing_status","fieldtype":"Select","label":"Processing Status","options":"Pending\nDelivered\nFailed\nIgnored","default":"Pending","reqd":1},
+  {"fieldname":"delivery_attempts","fieldtype":"Int","label":"Delivery Attempts","default":0},
+  {"fieldname":"last_delivery_on","fieldtype":"Datetime","label":"Last Delivery On"},
+  {"fieldname":"error_message","fieldtype":"Text","label":"Error Message"},
+  {"fieldname":"payload_json","fieldtype":"Code","label":"Payload JSON","options":"JSON"},
+  {"fieldname":"idempotency_key","fieldtype":"Data","label":"Idempotency Key","search_index":1}
  ],
- "fields": [
-  {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
-   "label": "Naming Series",
-   "options": "EP-SHE-.YYYY.-",
-   "reqd": 1,
-   "default": "EP-SHE-.YYYY.-"
-  },
-  {
-   "fieldname": "payment_request",
-   "fieldtype": "Link",
-   "label": "Payment Request",
-   "options": "EdgePay Payment Request",
-   "reqd": 1
-  },
-  {
-   "fieldname": "payment_transaction",
-   "fieldtype": "Link",
-   "label": "Payment Transaction",
-   "options": "EdgePay Payment Transaction"
-  },
-  {
-   "fieldname": "source_app",
-   "fieldtype": "Data",
-   "label": "Source App"
-  },
-  {
-   "fieldname": "source_doctype",
-   "fieldtype": "Data",
-   "label": "Source DocType"
-  },
-  {
-   "fieldname": "source_name",
-   "fieldtype": "Data",
-   "label": "Source Name"
-  },
-  {
-   "fieldname": "source_reference",
-   "fieldtype": "Data",
-   "label": "Source Reference"
-  },
-  {
-   "fieldname": "event_source",
-   "fieldtype": "Select",
-   "label": "Event Source",
-   "options": "Checkout\nVerification\nWebhook\nExpiry\nManual"
-  },
-  {
-   "fieldname": "event_type",
-   "fieldtype": "Select",
-   "label": "Event Type",
-   "options": "Payment Initiated\nPayment Pending\nPayment Paid\nPayment Failed\nPayment Expired\nPayment Cancelled"
-  },
-  {
-   "fieldname": "request_status",
-   "fieldtype": "Data",
-   "label": "Request Status"
-  },
-  {
-   "fieldname": "transaction_status",
-   "fieldtype": "Data",
-   "label": "Transaction Status"
-  },
-  {
-   "fieldname": "provider",
-   "fieldtype": "Link",
-   "label": "Provider",
-   "options": "EdgePay Provider"
-  },
-  {
-   "fieldname": "provider_reference",
-   "fieldtype": "Data",
-   "label": "Provider Reference"
-  },
-  {
-   "fieldname": "transaction_reference",
-   "fieldtype": "Data",
-   "label": "Transaction Reference"
-  },
-  {
-   "fieldname": "amount",
-   "fieldtype": "Currency",
-   "label": "Amount"
-  },
-  {
-   "fieldname": "currency",
-   "fieldtype": "Data",
-   "label": "Currency"
-  },
-  {
-   "fieldname": "paid_on",
-   "fieldtype": "Datetime",
-   "label": "Paid On"
-  },
-  {
-   "fieldname": "processing_status",
-   "fieldtype": "Select",
-   "label": "Processing Status",
-   "options": "Pending\nDelivered\nFailed\nIgnored",
-   "default": "Pending",
-   "reqd": 1
-  },
-  {
-   "fieldname": "delivery_attempts",
-   "fieldtype": "Int",
-   "label": "Delivery Attempts",
-   "default": 0
-  },
-  {
-   "fieldname": "last_delivery_on",
-   "fieldtype": "Datetime",
-   "label": "Last Delivery On"
-  },
-  {
-   "fieldname": "error_message",
-   "fieldtype": "Text",
-   "label": "Error Message"
-  },
-  {
-   "fieldname": "payload_json",
-   "fieldtype": "Code",
-   "label": "Payload JSON",
-   "options": "JSON"
-  },
-  {
-   "fieldname": "idempotency_key",
-   "fieldtype": "Data",
-   "label": "Idempotency Key",
-   "search_index": 1
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-06-12 18:00:00",
- "modified_by": "Administrator",
- "module": "EdgePay",
- "name": "EdgePay Status Handoff Event",
- "owner": "Administrator",
- "autoname": "naming_series:",
- "naming_rule": "By \"Naming Series\" field",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "EdgePay Admin",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "EdgePay Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "read": 1,
-   "role": "EdgePay User"
-  },
-  {
-   "read": 1,
-   "role": "EdgePay Auditor"
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"write":1,"report":1},
+  {"role":"EdgePay User","read":1,"report":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
 }

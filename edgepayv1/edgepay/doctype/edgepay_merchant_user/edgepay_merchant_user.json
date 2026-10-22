@@ -1,0 +1,20 @@
+{
+ "doctype":"DocType",
+ "name":"EdgePay Merchant User",
+ "module":"EdgePay",
+ "autoname":"hash",
+ "track_changes":1,
+ "engine":"InnoDB",
+ "field_order":["merchant","user","merchant_role","active","is_default"],
+ "fields":[
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"user","fieldtype":"Link","label":"User","options":"User","reqd":1,"search_index":1},
+  {"fieldname":"merchant_role","fieldtype":"Select","label":"Merchant Role","options":"Owner\nDeveloper\nFinance Manager\nOperations User\nAuditor","default":"Operations User","reqd":1},
+  {"fieldname":"active","fieldtype":"Check","label":"Active","default":"1"},
+  {"fieldname":"is_default","fieldtype":"Check","label":"Default Merchant","default":"0"}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"report":1}
+ ]
+}

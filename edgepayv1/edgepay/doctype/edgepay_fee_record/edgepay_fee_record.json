@@ -1,0 +1,23 @@
+{
+ "doctype":"DocType","name":"EdgePay Fee Record","module":"EdgePay","autoname":"naming_series:","track_changes":1,"engine":"InnoDB",
+ "field_order":["naming_series","merchant","payment_request","payment_transaction","provider_account","fee_type","amount","currency","tax_amount","net_effect","source_reference","calculated_on"],
+ "fields":[
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Naming Series","options":"EP-FEE-.YYYY.-","default":"EP-FEE-.YYYY.-","reqd":1},
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"payment_request","fieldtype":"Link","label":"Payment Request","options":"EdgePay Payment Request","reqd":1},
+  {"fieldname":"payment_transaction","fieldtype":"Link","label":"Payment Transaction","options":"EdgePay Payment Transaction"},
+  {"fieldname":"provider_account","fieldtype":"Link","label":"Provider Account","options":"EdgePay Provider Account","reqd":1},
+  {"fieldname":"fee_type","fieldtype":"Select","label":"Fee Type","options":"Provider Fee\nEdgePay Fee\nTax\nRefund Fee\nChargeback Fee\nOther","reqd":1},
+  {"fieldname":"amount","fieldtype":"Currency","label":"Amount","options":"currency","reqd":1},
+  {"fieldname":"currency","fieldtype":"Link","label":"Currency","options":"Currency","reqd":1},
+  {"fieldname":"tax_amount","fieldtype":"Currency","label":"Tax Amount","options":"currency","default":0},
+  {"fieldname":"net_effect","fieldtype":"Currency","label":"Net Effect","options":"currency","read_only":1},
+  {"fieldname":"source_reference","fieldtype":"Data","label":"Source Reference","search_index":1},
+  {"fieldname":"calculated_on","fieldtype":"Datetime","label":"Calculated On"}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"report":1,"export":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
+}

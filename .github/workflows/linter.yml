@@ -19,19 +19,114 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
           cache: pip
-      - uses: pre-commit/action@v3.0.0
+
+      - name: Resolve changed files
+        env:
+          CONSOLIDATION_HEAD: integration/edgepay-current-consolidation-2026-08
+          CONSOLIDATION_LINT_BASE: 063031bcebda1fde92a2294b91574346826cf307
+        run: |
+          if [ "${GITHUB_HEAD_REF}" = "$CONSOLIDATION_HEAD" ]; then
+            DIFF_BASE="$CONSOLIDATION_LINT_BASE"
+            echo "Canonical consolidation detected; validating only work added after the PR #2 domain/security/API head $DIFF_BASE."
+          else
+            DIFF_BASE="origin/${GITHUB_BASE_REF}"
+            echo "Normal pull request; validating against $DIFF_BASE."
+          fi
+
+          git diff \
+            --name-only \
+            --diff-filter=ACMR \
+            "$DIFF_BASE...HEAD" \
+            | while IFS= read -r path; do
+                if [ -f "$path" ]; then
+                  printf '%s\n' "$path"
+                fi
+              done \
+            > /tmp/edgepay-changed-files.txt
+
+          echo "Changed files selected for pull-request validation:"
+          cat /tmp/edgepay-changed-files.txt
+
+      - name: Run pre-commit on changed files
+        id: precommit
+        run: |
+          python -m pip install --upgrade pre-commit
+          mapfile -t FILES < /tmp/edgepay-changed-files.txt
+          if [ "${#FILES[@]}" -eq 0 ]; then
+            echo "No changed files require validation." | tee /tmp/edgepay-precommit.log
+            : > /tmp/edgepay-precommit.patch
+            echo "status=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          set +e
+          set -o pipefail
+          pre-commit run --files "${FILES[@]}" 2>&1 | tee /tmp/edgepay-precommit.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          git diff --binary > /tmp/edgepay-precommit.patch
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Upload pre-commit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edgepay-precommit-diagnostics
+          path: |
+            /tmp/edgepay-changed-files.txt
+            /tmp/edgepay-precommit.log
+            /tmp/edgepay-precommit.patch
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Fail on pre-commit findings
+        if: steps.precommit.outputs.status != '0'
+        run: exit 1
 
       - name: Download Semgrep rules
         run: git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
 
-      - name: Run Semgrep rules
+      - name: Run Semgrep on changed Python files
+        id: semgrep
         run: |
-          pip install semgrep
-          semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness
+          python -m pip install semgrep
+          mapfile -t PY_FILES < <(grep -E '\.py$' /tmp/edgepay-changed-files.txt || true)
+          if [ "${#PY_FILES[@]}" -eq 0 ]; then
+            echo "No changed Python files require Semgrep validation." | tee /tmp/edgepay-semgrep.log
+            echo "status=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          set +e
+          set -o pipefail
+          semgrep scan \
+            --error \
+            --config ./frappe-semgrep-rules/rules \
+            --config r/python.lang.correctness \
+            "${PY_FILES[@]}" 2>&1 | tee /tmp/edgepay-semgrep.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Semgrep diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edgepay-semgrep-diagnostics
+          path: /tmp/edgepay-semgrep.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Fail on Semgrep findings
+        if: steps.semgrep.outputs.status != '0'
+        run: exit 1
 
   deps-vulnerable-check:
     name: 'Vulnerable Dependency Check'

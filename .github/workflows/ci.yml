@@ -6,8 +6,11 @@ on:
       - develop
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: develop-edgepayv1-${{ github.event.number }}
+  group: develop-edgepayv1-${{ github.event.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -80,26 +83,53 @@ jobs:
           sudo apt update
           sudo apt-get install mariadb-client
 
-      - name: Setup
+      - name: Setup Frappe v16 bench
         run: |
           pip install frappe-bench
-          bench init --skip-redis-config-generation --skip-assets --python "$(which python)" ~/frappe-bench
+          bench init \
+            --frappe-branch version-16 \
+            --skip-redis-config-generation \
+            --skip-assets \
+            --python "$(which python)" \
+            ~/frappe-bench
+
+      - name: Check out authoritative EdgeSuite UI
+        uses: actions/checkout@v6
+        with:
+          repository: olayemigod/processedge-edge-suite-ui
+          ref: main
+          token: ${{ secrets.EDGESUITE_UI_TOKEN }}
+          path: edgesuite-ui-source
 
       - name: Install
         working-directory: /home/runner/frappe-bench
         run: |
-          bench get-app edgepayv1 $GITHUB_WORKSPACE
+          bench get-app --skip-assets "$GITHUB_WORKSPACE/edgesuite-ui-source"
+          bench get-app --skip-assets "$GITHUB_WORKSPACE"
           bench setup requirements --dev
           bench new-site --db-root-password root --admin-password admin test_site
+          bench --site test_site install-app edgesuite_ui
           bench --site test_site install-app edgepayv1
-          bench build
+          bench build --app edgesuite_ui
+          bench build --app edgepayv1
         env:
           CI: 'Yes'
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |
+          set -o pipefail
           bench --site test_site set-config allow_tests true
-          bench --site test_site run-tests --app edgepayv1
+          bench --site test_site run-tests --app edgepayv1 2>&1 \
+            | tee /tmp/edgepay-server-tests.log
         env:
           TYPE: server
+
+      - name: Upload server test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edgepay-server-test-log
+          path: /tmp/edgepay-server-tests.log
+          if-no-files-found: warn
+          retention-days: 7

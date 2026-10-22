@@ -1,0 +1,26 @@
+{
+ "doctype":"DocType","name":"EdgePay Chargeback","module":"EdgePay","autoname":"naming_series:","track_changes":1,"engine":"InnoDB",
+ "field_order":["naming_series","merchant","payment_request","payment_transaction","provider_account","status","amount","currency","provider_chargeback_reference","reason_code","opened_on","due_on","resolved_on","resolution","notes"],
+ "fields":[
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Naming Series","options":"EP-CBK-.YYYY.-","default":"EP-CBK-.YYYY.-","reqd":1},
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"payment_request","fieldtype":"Link","label":"Payment Request","options":"EdgePay Payment Request","reqd":1},
+  {"fieldname":"payment_transaction","fieldtype":"Link","label":"Payment Transaction","options":"EdgePay Payment Transaction","reqd":1},
+  {"fieldname":"provider_account","fieldtype":"Link","label":"Provider Account","options":"EdgePay Provider Account","reqd":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Open\nEvidence Required\nSubmitted\nWon\nLost\nClosed","default":"Open","reqd":1},
+  {"fieldname":"amount","fieldtype":"Currency","label":"Amount","options":"currency","reqd":1},
+  {"fieldname":"currency","fieldtype":"Link","label":"Currency","options":"Currency","reqd":1},
+  {"fieldname":"provider_chargeback_reference","fieldtype":"Data","label":"Provider Chargeback Reference","search_index":1},
+  {"fieldname":"reason_code","fieldtype":"Data","label":"Reason Code"},
+  {"fieldname":"opened_on","fieldtype":"Datetime","label":"Opened On"},
+  {"fieldname":"due_on","fieldtype":"Datetime","label":"Due On"},
+  {"fieldname":"resolved_on","fieldtype":"Datetime","label":"Resolved On"},
+  {"fieldname":"resolution","fieldtype":"Select","label":"Resolution","options":"\nWon\nLost\nAccepted"},
+  {"fieldname":"notes","fieldtype":"Small Text","label":"Notes"}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"write":1,"create":1,"report":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
+}

@@ -1,0 +1,21 @@
+{
+ "doctype":"DocType","name":"EdgePay External Reference","module":"EdgePay","autoname":"hash","track_changes":1,"engine":"InnoDB",
+ "field_order":["merchant","provider_account","reference_type","reference_value","payment_request","payment_attempt","payment_transaction","active","created_on"],
+ "fields":[
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"provider_account","fieldtype":"Link","label":"Provider Account","options":"EdgePay Provider Account","reqd":1,"search_index":1},
+  {"fieldname":"reference_type","fieldtype":"Select","label":"Reference Type","options":"Payment Request\nProvider Payment\nProvider Transaction\nCheckout Session\nCallback\nWebhook Event\nRefund","reqd":1,"search_index":1},
+  {"fieldname":"reference_value","fieldtype":"Data","label":"Reference Value","reqd":1,"search_index":1},
+  {"fieldname":"payment_request","fieldtype":"Link","label":"Payment Request","options":"EdgePay Payment Request","reqd":1},
+  {"fieldname":"payment_attempt","fieldtype":"Link","label":"Payment Attempt","options":"EdgePay Payment Attempt"},
+  {"fieldname":"payment_transaction","fieldtype":"Link","label":"Payment Transaction","options":"EdgePay Payment Transaction"},
+  {"fieldname":"active","fieldtype":"Check","label":"Active","default":"1"},
+  {"fieldname":"created_on","fieldtype":"Datetime","label":"Created On","read_only":1}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"report":1},
+  {"role":"EdgePay User","read":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
+}

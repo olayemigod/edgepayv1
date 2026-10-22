@@ -1,0 +1,23 @@
+{
+ "doctype":"DocType","name":"EdgePay Settlement Item","module":"EdgePay","autoname":"naming_series:","track_changes":1,"engine":"InnoDB",
+ "field_order":["naming_series","merchant","settlement_batch","payment_request","payment_transaction","gross_amount","provider_fee","edgepay_fee","tax_amount","net_amount","status","variance_amount"],
+ "fields":[
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Naming Series","options":"EP-STI-.YYYY.-","default":"EP-STI-.YYYY.-","reqd":1},
+  {"fieldname":"merchant","fieldtype":"Link","label":"Merchant","options":"EdgePay Merchant","reqd":1,"search_index":1},
+  {"fieldname":"settlement_batch","fieldtype":"Link","label":"Settlement Batch","options":"EdgePay Settlement Batch","reqd":1,"search_index":1},
+  {"fieldname":"payment_request","fieldtype":"Link","label":"Payment Request","options":"EdgePay Payment Request","reqd":1},
+  {"fieldname":"payment_transaction","fieldtype":"Link","label":"Payment Transaction","options":"EdgePay Payment Transaction","reqd":1},
+  {"fieldname":"gross_amount","fieldtype":"Currency","label":"Gross Amount","options":"currency","reqd":1},
+  {"fieldname":"provider_fee","fieldtype":"Currency","label":"Provider Fee","options":"currency","default":0},
+  {"fieldname":"edgepay_fee","fieldtype":"Currency","label":"EdgePay Fee","options":"currency","default":0},
+  {"fieldname":"tax_amount","fieldtype":"Currency","label":"Tax Amount","options":"currency","default":0},
+  {"fieldname":"net_amount","fieldtype":"Currency","label":"Net Amount","options":"currency","read_only":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Expected\nSettled\nVariance\nReversed","default":"Expected","reqd":1},
+  {"fieldname":"variance_amount","fieldtype":"Currency","label":"Variance Amount","options":"currency","default":0}
+ ],
+ "permissions":[
+  {"role":"EdgePay Admin","read":1,"write":1,"create":1,"report":1,"export":1},
+  {"role":"EdgePay Manager","read":1,"write":1,"create":1,"report":1,"export":1},
+  {"role":"EdgePay Auditor","read":1,"report":1}
+ ]
+}

@@ -22,10 +22,10 @@
   },
   {
    "default": "0",
+   "description": "Explicit gate enabling live HTTP/external provider calls",
    "fieldname": "allow_external_http_calls",
    "fieldtype": "Check",
-   "label": "Allow External HTTP Calls",
-   "description": "Explicit gate enabling live HTTP/external provider calls"
+   "label": "Allow External HTTP Calls"
   },
   {
    "fieldname": "default_provider",
@@ -34,10 +34,10 @@
    "options": "EdgePay Provider"
   },
   {
+   "description": "Base URL for incoming payment webhooks",
    "fieldname": "webhook_base_url",
    "fieldtype": "Data",
-   "label": "Webhook Base URL",
-   "description": "Base URL for incoming payment webhooks"
+   "label": "Webhook Base URL"
   },
   {
    "default": "1",
@@ -67,7 +67,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-11 11:32:00",
+ "modified": "2026-07-31 18:23:00.000000",
  "modified_by": "Administrator",
  "module": "EdgePay",
  "name": "EdgePay Settings",
@@ -82,18 +82,6 @@
    "read": 1,
    "report": 1,
    "role": "EdgePay Admin",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "EdgePay Manager",
    "share": 1,
    "write": 1
   }
