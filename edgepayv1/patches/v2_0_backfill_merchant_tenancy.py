@@ -20,6 +20,7 @@ def _ensure_legacy_merchant():
 			"merchant_name": LEGACY_MERCHANT,
 			"legal_name": "ProcessEdge Legacy EdgePay Data",
 			"status": "Active",
+			"verification_status": "Verified",
 			"country": "Nigeria" if frappe.db.exists("Country", "Nigeria") else None,
 			"default_currency": "NGN" if frappe.db.exists("Currency", "NGN") else None,
 			"external_platform": "Legacy",
