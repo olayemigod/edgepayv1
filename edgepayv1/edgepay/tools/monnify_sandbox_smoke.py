@@ -149,8 +149,13 @@ def run_monnify_sandbox_smoke():
 		print(f"Error during smoke test execution: {redacted_err}")
 		raise
 	finally:
+		if payment_request_name:
+			frappe.db.delete("EdgePay External Reference", {"payment_request": payment_request_name})
+			frappe.db.delete("EdgePay Status Handoff Event", {"payment_request": payment_request_name})
 		if transaction_name and frappe.db.exists("EdgePay Payment Transaction", transaction_name):
 			frappe.db.delete("EdgePay Payment Transaction", transaction_name)
+		if payment_request_name:
+			frappe.db.delete("EdgePay Payment Attempt", {"payment_request": payment_request_name})
 		if payment_request_name and frappe.db.exists("EdgePay Payment Request", payment_request_name):
 			frappe.db.delete("EdgePay Payment Request", payment_request_name)
 		if provider_account_name and frappe.db.exists("EdgePay Provider Account", provider_account_name):
